@@ -34,13 +34,12 @@ ccColor3B paint(bool practice){
 	return c;
 }
 
-class $modify(PauseLayer) {
+class $modify(PoseLayer, PauseLayer) {
 	static void onModify(auto& self) {
-        self.setHookPriority("PauseLayer::create", -100);}
+        	self.setHookPriority("PauseLayer::customSetup", -100);}
     
-	static PauseLayer* create(bool p0) {
-		auto pl = PauseLayer::create(p0);
-
+	void customSetup() {
+		PauseLayer::customSetup();
 		auto playLayer = PlayLayer::get();
 		bool plat = playLayer->m_level->isPlatformer();
 		if ((!plat)&&(Mod::get()->getSettingValue<bool>("pause-layer"))){
