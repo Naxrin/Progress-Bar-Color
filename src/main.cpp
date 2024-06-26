@@ -45,8 +45,8 @@ class $modify(PoseLayer, PauseLayer) {
 		if ((!plat)&&(Mod::get()->getSettingValue<bool>("pause-layer"))){
 
 			CCSprite *normal_now, *practice_now, *normal_bar, *practice_bar;
-			if (pl->getChildByID("better-pause-node")){
-				auto menu = pl->getChildByID("better-pause-node");
+			if (this->getChildByID("better-pause-node")){
+				auto menu = this->getChildByID("better-pause-node");
 				normal_now = static_cast<CCSprite*>(menu->getChildByID("normal-bar")->getChildren()->objectAtIndex(1));
 				practice_now = static_cast<CCSprite*>(menu->getChildByID("practice-bar")->getChildren()->objectAtIndex(1));
 				normal_bar = static_cast<CCSprite*>(menu->getChildByID("normal-bar")->getChildren()->objectAtIndex(2));
@@ -63,8 +63,8 @@ class $modify(PoseLayer, PauseLayer) {
 				practice_now->setColor(cb2);
 			}
 			else{
-				normal_bar = static_cast<CCSprite*>(pl->getChildByID("normal-progress-bar")->getChildren()->objectAtIndex(0));
-				practice_bar = static_cast<CCSprite*>(pl->getChildByID("practice-progress-bar")->getChildren()->objectAtIndex(0));
+				normal_bar = static_cast<CCSprite*>(this->getChildByID("normal-progress-bar")->getChildren()->objectAtIndex(0));
+				practice_bar = static_cast<CCSprite*>(this->getChildByID("practice-progress-bar")->getChildren()->objectAtIndex(0));
 			
 				// normal
 				ccColor3B cb1 = paint(false);
@@ -75,7 +75,6 @@ class $modify(PoseLayer, PauseLayer) {
 				practice_bar->setColor(cb2);
 			}
 		}
-		return pl;
 	}
 };
 
