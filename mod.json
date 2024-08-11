@@ -1,68 +1,86 @@
 {
-	"geode": "3.1.1",
+	"geode": "3.4.0",
 	"gd":{
 		"win":"2.206",
 		"android":"2.206",
 		"mac":"2.206"
 	},
-	"version": "v2.0.1",
+	"version": "2.1.0",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
-	"description": "This mod lets you customize your progress bar color!You can set your normal & practice progress bar manually or follow your player colors.",
-	"tags":["interface","customization"],
+	"description": "This mod lets you customize your progress bar color!You can set your normal/practice progress bar manually or follow your player colors.",
+	"repository": "https://github.com/Naxrin/Progress-Bar-Color",
 	"dependencies": [
 		{
 			"id": "geode.node-ids",
-			"version": "v1.12.0",
-			"importance":"required"
+			"version": "v1.0.0"			
 		}],
+	"resources": {
+		"sprites": [
+			"resources/*.png"
+		]
+	},
 	"settings":{
-		"normal-follow": {
-		        "name": "Normal Bar Follow Player",
-		        "description": "Make Normal Progress Bar color follow current player color.\n0->Default:Set it manually\n1->Follow Main Color\n2->Follow Secondary Color\n3->Follow Glow Color",
-		        "type": "int",
-		        "default": 0,
-			"min":0,
-			"max":3
+		"normal-default": {
+            "name": "Normal Progress Bar (default)",
+            "description": "The mod will apply this to the game UI if the <cg>Normal Progress Bar</c> color options below are set to default",
+            "type": "custom"
         },
-		"normal-manual": {
-			"name": "Normal Bar",
-			"description": "Color of Normal Progress Bar color\nOnly works when Normal Bar Follow Player is set to zero",
-			"type": "color",
-			"default": "#00FF00"
-		},
-		"practice-follow": {
-			"name": "Practice Bar Follow Player",
-			"description": "Make Practice Progress Bar color follow current player color.\n0->Default:Set it manually\n1->Follow Main Color\n2->Follow Secondary Color\n3->Follow Glow Color",
-			"type": "int",
-			"default": 0,
-			"min":0,
-			"max":3
+		"practice-default": {
+            "name": "Practice Progress Bar (default)",
+            "description": "The mod will apply this to the game UI if the <cj>Practice Progress Bar</c> color options below below are set to default",
+            "type": "custom"
         },
-		"practice-manual": {
-			"name": "Practice Bar",
-			"description": "Color of Practice Progress Bar color\nOnly works when Practice Bar Follow Player is set to zero",
-			"type": "color",
-			"default": "#00FFFF"
-        },
-		"level-info-layer": {
-			"name": "Level Entrance",
-			"description": "Apply to LevelInfoLayer where you enter a level",
-			"type": "bool",
-			"default": true
+		"info-menu-normal": {
+            "name": "Normal Progress Bar (level info)",
+            "description": "Color of <cg>Normal Progress Bar</c> color in Level Info Menu",
+            "type": "custom"
 		},
-		"pause-layer": {
-			"name": "Pause Menu",
-			"description": "Apply to PauseLayer (pause menu), already fits BetterPause mod",
-			"type": "bool",
-			"default": true
+		"info-menu-practice": {
+            "name": "Practice Progress Bar (level info)",
+            "description": "Color of <cj>Practice Progress Bar</c> color in Level Info Menu",
+            "type": "custom"
 		},
-		"official-level": {
-			"name": "Official Levels",
-			"description": "Apply to Robtop's official levels select menu.\nThe hardest part for modding, but I guess few old players even care this.",
-			"type": "bool",
-			"default": true
+		"pause-menu-normal": {
+            "name": "Normal Progress Bar (pause menu)",
+            "description": "Color of <cg>Normal Progress Bar</c> color in Pause Menu",
+            "type": "custom"
+		},
+		"pause-menu-practice": {
+            "name": "Practice Progress Bar (pause menu)",
+            "description": "Color of <cj>Practice Progress Bar</c> color in Pause Menu",
+            "type": "custom"
+		},
+		"official-levels-normal": {
+            "name": "Normal Progress Bar (official levels)",
+            "description": "Color of <cg>Normal Progress Bar</c> color in Official Levels Select Menu",
+            "type": "custom"
+		},
+		"official-levels-practice": {
+            "name": "Practice Progress Bar (official levels)",
+            "description": "Color of <cj>Practice Progress Bar</c> color in Official Levels Select Menu",
+            "type": "custom"
+		},
+		"quest-default":{
+            "name": "Quest Progress Bar (default)",
+            "description": "The mod will apply this to the game UI if the quest progress bar color options below are set to default",
+            "type": "custom"
+		},
+		"quest-top":{
+            "name": "Quest Progress Bar (top)",
+            "description": "The Color of Top Quest Progress Bar",
+            "type": "custom"
+		},
+		"quest-middle":{
+            "name": "Quest Progress Bar (middle)",
+            "description": "The Color of Middle Quest Progress Bar",
+            "type": "custom"
+		},
+		"quest-bottom":{
+            "name": "Quest Progress Bar (bottom)",
+            "description": "The Color of Bottom Quest Progress Bar",
+            "type": "custom"
 		}
 	}
 }

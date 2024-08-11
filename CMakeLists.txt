@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.21)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_OSX_ARCHITECTURES "x86_64")
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(SKIP_BUILDING_CODEGEN OFF)
-
-project(ProgressBarColor VERSION 2.1.0)
+project(ProgressBarColor VERSION 1.0.0)
 
 # Set up the mod binary
 add_library(${PROJECT_NAME} SHARED
     src/main.cpp
+    src/custom.cpp
+    src/head.hpp
     # Add your cpp files here
 )
 
