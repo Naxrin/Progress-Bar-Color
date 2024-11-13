@@ -1,3 +1,11 @@
+# 2.2.0
+#### <cy>Better settings UI!</c>
+Former setting UI is too complex and confusing ~~even a bit buggy~~, I'm sry 4 that.  
+Also such config menu logic will be applied to the next Chroma Icons update ~~when I have time~~
+#### <cy>Compatible with Overcharged Menus</c>
+The two mods won't fight now.  
+Also in this update huge effort is made to avoid crash if any mods conflict with it again in the future.
+
 # 2.1.0
 Better settings UI!  
 Able to set progress bars individually for menus!  

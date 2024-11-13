@@ -1,10 +1,11 @@
 {
-	"geode": "3.4.0",
+	"geode": "3.9.0",
 	"gd":{
 		"win":"2.206",
-		"android":"2.206"
+		"android":"2.206",
+		"mac":"2.206"
 	},
-	"version": "v2.1.0",
+	"version": "v2.2.0",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
@@ -13,74 +14,94 @@
 	"dependencies": [
 		{
 			"id": "geode.node-ids",
-			"version": "v1.12.0",
-			"importance":"required"
+			"version": "v1.12.0"
 		}],
-	"resources": {
-		"sprites": [
-			"resources/*.png"
-		]
-	},
 	"settings":{
-		"normal-default": {
-            "name": "Normal Progress Bar (default)",
-            "description": "The mod will apply this to the game UI if the <cg>Normal Progress Bar</c> color options below are set to default",
-            "type": "custom"
+		"normal-progress-bars": {
+            "name": "Normal Progress Bars",
+            "description": "Modify Levels' Normal Progress Bar Colors in case you wanna set them in the same style everywhere",
+            "type": "title"
         },
-		"practice-default": {
-            "name": "Practice Progress Bar (default)",
-            "description": "The mod will apply this to the game UI if the <cj>Practice Progress Bar</c> color options below below are set to default",
-            "type": "custom"
+		"normal-default-mode": {
+            "name": "Mode",
+            "description": "Pick the way you hope to set your <cg>Normal Progress Bar</c> color\nOriginal: Green\nFollow: Sync with player color channel\nManual: Set it manually",
+            "type": "string",
+			"one-of": ["Original", "Follow", "Manual"],
+			"default": "Original"
         },
-		"info-menu-normal": {
-            "name": "Normal Progress Bar (level info)",
-            "description": "Color of <cg>Normal Progress Bar</c> color in Level Info Menu",
-            "type": "custom"
+		"normal-default-follower": {
+            "name": "Follower",
+            "description": "Pick the color channel you hope your <cg>Normal Progress Bar</c> color follow",
+            "type": "string",
+			"one-of": ["Main", "Secondary", "Glow"],
+			"default": "Main"
+        },
+		"normal-default-color": {
+            "name": "Manual Color",
+            "description": "Pick the color manually for your <cg>Normal Progress Bar</c>",
+            "type": "rgb",
+			"default": "00FF00"
+        },
+		"practice-progress-bars": {
+            "name": "Practice Progress Bars",
+            "description": "Modify Levels' Practice Progress Bar Colors in case you wanna set them in the same style everywhere",
+            "type": "title"
+        },
+		"practice-default-mode": {
+            "name": "Mode",
+            "description": "Pick the way you hope to set your <cg>Practice Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually",
+            "type": "string",
+			"one-of": ["Original", "Follow", "Manual"],
+			"default": "Original"
+        },
+		"practice-default-follower": {
+            "name": "Follower",
+            "description": "Pick the color channel you hope your <cg>Practice Progress Bar</c> color follow",
+            "type": "string",
+			"one-of": ["Main", "Secondary", "Glow"],
+			"default": "Main"
+        },
+		"practice-default-color": {
+            "name": "Manual Color",
+            "description": "Pick the color manually for your <cg>Practice Progress Bar</c>",
+            "type": "rgb",
+			"default": "00FFFF"
+        },
+
+		"quest-bars": {
+            "name": "Quest Progress Bars",
+            "description": "Modify Quest Progress Bar Colors here in case you wanna set all of the three lines together.",
+            "type": "title"
+        },
+		"quest-default-mode": {
+            "name": "Mode",
+            "description": "Pick the way you hope to set your <cg>Quest Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually",
+            "type": "string",
+			"one-of": ["Original", "Follow", "Manual"],
+			"default": "Original"
+        },
+		"quest-default-follower": {
+            "name": "Follower",
+            "description": "Pick the color channel you hope your <cg>Quest Progress Bar</c> color follow",
+            "type": "string",
+			"one-of": ["Main", "Secondary", "Glow"],
+			"default": "Main"
+        },
+		"quest-default-color": {
+            "name": "Manual Color",
+            "description": "Pick the color manually for your <cg>Quest Progress Bar</c>",
+            "type": "rgb",
+			"default": "00FF00"
+        },
+		"advanced-options": {
+			"name": "Advanced Options",
+			"description": "For deep user-defiend players.",
+			"type": "title"
 		},
-		"info-menu-practice": {
-            "name": "Practice Progress Bar (level info)",
-            "description": "Color of <cj>Practice Progress Bar</c> color in Level Info Menu",
-            "type": "custom"
-		},
-		"pause-menu-normal": {
-            "name": "Normal Progress Bar (pause menu)",
-            "description": "Color of <cg>Normal Progress Bar</c> color in Pause Menu",
-            "type": "custom"
-		},
-		"pause-menu-practice": {
-            "name": "Practice Progress Bar (pause menu)",
-            "description": "Color of <cj>Practice Progress Bar</c> color in Pause Menu",
-            "type": "custom"
-		},
-		"official-levels-normal": {
-            "name": "Normal Progress Bar (official levels)",
-            "description": "Color of <cg>Normal Progress Bar</c> color in Official Levels Select Menu",
-            "type": "custom"
-		},
-		"official-levels-practice": {
-            "name": "Practice Progress Bar (official levels)",
-            "description": "Color of <cj>Practice Progress Bar</c> color in Official Levels Select Menu",
-            "type": "custom"
-		},
-		"quest-default":{
-            "name": "Quest Progress Bar (default)",
-            "description": "The mod will apply this to the game UI if the quest progress bar color options below are set to default",
-            "type": "custom"
-		},
-		"quest-top":{
-            "name": "Quest Progress Bar (top)",
-            "description": "The Color of Top Quest Progress Bar",
-            "type": "custom"
-		},
-		"quest-middle":{
-            "name": "Quest Progress Bar (middle)",
-            "description": "The Color of Middle Quest Progress Bar",
-            "type": "custom"
-		},
-		"quest-bottom":{
-            "name": "Quest Progress Bar (bottom)",
-            "description": "The Color of Bottom Quest Progress Bar",
-            "type": "custom"
+		"advanced-menu": {
+			"name": "Seperately Config",
+			"description": "In case you hope to <cy>seperately</c> set level progress bars in different layer menus or quest bars of different grades.",
+			"type":"custom:advanced-option"
 		}
 	}
 }
