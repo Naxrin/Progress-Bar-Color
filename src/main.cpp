@@ -6,53 +6,50 @@
 
 using namespace geode::prelude;
 
-// tell me the actual color im gonna paint regarding color setup
-void paint(auto target, BarColor color, BarColor def){
+// paint a target node (progress bar) regarding its keyname
+// key = pause-menu/info-menu/official-levels/quest
+// place = normal/practice/top/middle/bottom
+void paint(auto target, std::string key, std::string place) {
 	auto gm = GameManager::sharedState();
+	// maginot line
 	if (!target) return;
-
-	switch(color.mode){
+	std::string index = key + "-" + place;
+	BarColor advcfg = Mod::get()->getSavedValue<BarColor>(index, place == "default" ? def2 : def1);
+	std::string mode, follower;
+	switch(advcfg.mode) {
+	// common
 	case 0:
-		switch (def.mode) {
-		case 1:
-			switch(def.follower) {
-			case 0:
+		mode = Mod::get()->getSettingValue<std::string>(key + "-default-mode");
+		if (mode == "Follow") {
+			follower = Mod::get()->getSettingValue<std::string>(key + "-default-follower");
+			if (follower == "Main")
 				target->setColor(gm->colorForIdx(gm->getPlayerColor()));
-				break;
-			case 1:
+			else if (follower == "Secondary")
 				target->setColor(gm->colorForIdx(gm->getPlayerColor2()));
-				break;
-			case 2:
+			else if (follower == "Glow")
 				target->setColor(gm->colorForIdx(gm->getPlayerGlowColor()));
-				break;
-			default:
-				break;
-			}
+		} else if (mode == "Manual")
+			target->setColor(Mod::get()->getSettingValue<ccColor3B>(key + "-default-color"));
+		break;
+	// follow
+	case 1:
+		switch(advcfg.follower) {
+		case 0:
+			target->setColor(gm->colorForIdx(gm->getPlayerColor()));
+			break;
+		case 1:
+			target->setColor(gm->colorForIdx(gm->getPlayerColor2()));
 			break;
 		case 2:
-			target->setColor(def.color);
+			target->setColor(gm->colorForIdx(gm->getPlayerGlowColor()));
 			break;
-		default:		
+		default:
 			break;
 		}
 		break;
-	case 1:
-		switch(def.follower) {
-			case 0:
-				target->setColor(gm->colorForIdx(gm->getPlayerColor()));
-				break;
-			case 1:
-				target->setColor(gm->colorForIdx(gm->getPlayerColor2()));
-				break;
-			case 2:
-				target->setColor(gm->colorForIdx(gm->getPlayerGlowColor()));
-				break;
-			default:
-				break;
-		}
-		break;
+	// manual
 	case 2:
-		target->setColor(color.color);
+		target->setColor(advcfg.color);
 		//log::info("paint {} {} {}", c.r, c.g, c.b);		
 		break;
 	default:
@@ -65,62 +62,19 @@ class $modify(PauseLayer) {
         self.setHookPriority("PauseLayer::init", -100);}
     
 	void customSetup() {
-
 		PauseLayer::customSetup();
 
 		auto playLayer = PlayLayer::get();
 		bool plat = playLayer->m_level->isPlatformer();
 		if (!plat){
-			CCSprite *normal_now, *practice_now, *normal_bar, *practice_bar;
-			if (getChildByID("better-pause-node")){
-				auto menu = getChildByID("better-pause-node");
-				normal_now = static_cast<CCSprite*>(menu->getChildByID("normal-bar")->getChildren()->objectAtIndex(1));
-				practice_now = static_cast<CCSprite*>(menu->getChildByID("practice-bar")->getChildren()->objectAtIndex(1));
-				normal_bar = static_cast<CCSprite*>(menu->getChildByID("normal-bar")->getChildren()->objectAtIndex(2));
-				practice_bar = static_cast<CCSprite*>(menu->getChildByID("practice-bar")->getChildren()->objectAtIndex(2));
-
-				// normal
-				paint(
-					normal_bar,
-					Mod::get()->getSettingValue<BarColor>("pause-menu-normal"),
-					Mod::get()->getSettingValue<BarColor>("normal-default")
-				);
-				paint(
-					normal_now,
-					Mod::get()->getSettingValue<BarColor>("pause-menu-normal"),
-					Mod::get()->getSettingValue<BarColor>("normal-default")
-				);
-				
-				//practice
-				paint(
-					practice_bar,
-					Mod::get()->getSettingValue<BarColor>("pause-menu-practice"),
-					Mod::get()->getSettingValue<BarColor>("practice-default")
-				);
-				paint(
-					practice_now,
-					Mod::get()->getSettingValue<BarColor>("pause-menu-practice"),
-					Mod::get()->getSettingValue<BarColor>("practice-default")
-				);
-			}
-			else{
-				normal_bar = static_cast<CCSprite*>(getChildByID("normal-progress-bar")->getChildren()->objectAtIndex(0));
-				practice_bar = static_cast<CCSprite*>(getChildByID("practice-progress-bar")->getChildren()->objectAtIndex(0));
-			
-				// normal
-				paint(
-					normal_bar,
-					Mod::get()->getSettingValue<BarColor>("pause-menu-normal"),
-					Mod::get()->getSettingValue<BarColor>("normal-default")
-				);
-				
-				//practice
-				paint(
-					practice_bar,
-					Mod::get()->getSettingValue<BarColor>("pause-menu-practice"),
-					Mod::get()->getSettingValue<BarColor>("practice-default")
-				);
-			}
+			// don't crash plz
+			if (!getChildByID("normal-progress-bar") || !getChildByID("normal-progress-bar")->getChildren()) return;
+			// nodes
+			auto normal_bar = static_cast<CCSprite*>(getChildByID("normal-progress-bar")->getChildren()->objectAtIndex(0));
+			auto practice_bar = static_cast<CCSprite*>(getChildByID("practice-progress-bar")->getChildren()->objectAtIndex(0));
+			// paint
+			paint(normal_bar, "pause-menu", "normal");
+			paint(practice_bar, "pause-menu", "practice");
 		}
 	}
 };
@@ -132,19 +86,14 @@ class $modify(LevelInfoLayer) {
 			return false;
 		}
 		if (!level->isPlatformer()){
-			// normal
-			paint(
-				static_cast<CCSprite* >(getChildByID("normal-mode-bar")->getChildren()->objectAtIndex(0)),
-				Mod::get()->getSettingValue<BarColor>("info-menu-normal"),
-				Mod::get()->getSettingValue<BarColor>("normal-default")
-			);
-			
-			//practice
-			paint(
-				static_cast<CCSprite* >(this->getChildByID("practice-mode-bar")->getChildren()->objectAtIndex(0)),
-				Mod::get()->getSettingValue<BarColor>("info-menu-practice"),
-				Mod::get()->getSettingValue<BarColor>("practice-default")
-			);
+			// don't crash plz
+			if (!getChildByID("normal-mode-bar") || !getChildByID("normal-mode-bar")->getChildren()) return true;
+			// nodes
+			auto normal_bar = static_cast<CCSprite*>(getChildByID("normal-mode-bar")->getChildren()->objectAtIndex(0));
+			auto practice_bar = static_cast<CCSprite*>(getChildByID("practice-mode-bar")->getChildren()->objectAtIndex(0));
+			// paint
+			paint(normal_bar, "info-menu", "normal");
+			paint(practice_bar, "info-menu", "practice");
 		}
 		return true;
 	}
@@ -160,27 +109,24 @@ class $modify(LevelSelectLayer) {
 
 		auto children = this->getChildren();
 		auto scroll = getChildOfType<BoomScrollLayer>(this, 0);
+		if (! scroll || !scroll->getChildren()) return true;
 		auto ext = static_cast<CCNode*>(scroll->getChildren()->objectAtIndex(0));
 		for (auto* obj: CCArrayExt<CCObject*>(ext->getChildren())){
-			auto lvlpage = static_cast<CCNode*>(obj);	
+			auto lvlpage = static_cast<CCNode*>(obj);
 
-			//normal					
+			// Overcharged Main Levels fix
+			if (Loader::get()->isModLoaded("firee.overchargedlevels"))
+				lvlpage = lvlpage->getChildByID("normal-progress-bar");
+
+			// normal
 			nb = static_cast<CCNode*>(lvlpage->getChildren()->objectAtIndex(1));
 			normal_bar = static_cast<CCSprite*>(nb->getChildren()->objectAtIndex(0));
-			paint(
-				normal_bar,
-				Mod::get()->getSettingValue<BarColor>("official-levels-normal"),
-				Mod::get()->getSettingValue<BarColor>("normal-default")
-			);
-
-			//practice		
+			// practice
 			pb = static_cast<CCNode*>(lvlpage->getChildren()->objectAtIndex(2));
-			practice_bar = static_cast<CCSprite*>(pb->getChildren()->objectAtIndex(0));
-			paint(
-				practice_bar,
-				Mod::get()->getSettingValue<BarColor>("official-levels-practice"),
-				Mod::get()->getSettingValue<BarColor>("practice-default")
-			);
+			practice_bar = static_cast<CCSprite*>(pb->getChildren()->objectAtIndex(0));	
+			// paint
+			paint(normal_bar, "official-levels", "normal");
+			paint(practice_bar, "official-levels", "practice");
 		}
 		
 		this->updateLayout();
@@ -196,15 +142,16 @@ class $modify(ChallengeNode){
 			return false;
 		if (auto bar = getChildByID("progress-bar")){
 			auto target = static_cast<CCSprite*>(bar->getChildren()->objectAtIndex(0));
-			const char* grades[4] = {"quest-default", "quest-top", "quest-middle", "quest-bottom"};
+			const char* grades[4] = {"default", "top", "middle", "bottom"};
 
-			paint(
-				target,
-				Mod::get()->getSettingValue<BarColor>(grades[item->m_position]),
-				Mod::get()->getSettingValue<BarColor>(grades[0])
-			);			
+			paint(target, "quest", grades[item->m_position]);			
 		}
 		return true;
 	}
 };
 
+
+// Register setting
+$execute {
+    (void)Mod::get()->registerCustomSettingType("advanced-option", &AdvancedSetting::parse);
+}

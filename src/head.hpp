@@ -1,9 +1,10 @@
 #pragma once
-#include <Geode/loader/SettingNode.hpp>
-
+#include <Geode/loader/SettingV3.hpp>
+#include <Geode/modify/CCMenuItemToggler.hpp>
 using namespace geode::prelude;
 
-// struct setup
+// struct setup for a color channel
+/**/
 struct BarColor {
     int mode;
     int follower;
@@ -12,6 +13,9 @@ struct BarColor {
 	    return ((mode == c.mode) && (follower == c.follower) && (color == c.color));
     };
 };
+
+static BarColor def1 = BarColor{.mode = 0, .follower = 0, .color=ccColor3B(0, 255, 0)};
+static BarColor def2 = BarColor{.mode = 0, .follower = 0, .color=ccColor3B(255, 255, 0)};
 
 template<>
 struct matjson::Serialize<BarColor> {
@@ -36,141 +40,121 @@ struct matjson::Serialize<BarColor> {
         obj["b"] = value.color.b;
         return obj;
     }
+    static bool is_json(matjson::Value const& json) {
+        if (!json.is_object()) return false;
+        if (!(json.as_object().contains("mode") && json["mode"].is_number() && json["mode"].as_int() < 3 && json["mode"].as_int() >= 0)) return false;
+        if (!(json.as_object().contains("follower") && json["follower"].is_number() && json["follower"].as_int() < 3 && json["follower"].as_int() >= 0)) return false;
+        if (!(json.as_object().contains("r") && json["r"].is_number() && json["r"].as_int() < 256 && json["r"].as_int() >= 0)) return false;
+        if (!(json.as_object().contains("g") && json["g"].is_number() && json["g"].as_int() < 256 && json["g"].as_int() >= 0)) return false;
+        if (!(json.as_object().contains("b") && json["b"].is_number() && json["b"].as_int() < 256 && json["b"].as_int() >= 0)) return false;
+        return true;
+    }
 };
 
-// custom setting value
-class BarColorValue : public SettingValue {
+class AdvancedMenu : public Popup<>, public ColorPickPopupDelegate {
 protected:
-    BarColor bar_color;
+    int currentTab;
+    BarColor currentConfig;
+    bool setup() override;
+    void initialize();
+    void onSwitchTab(CCObject*);
+    void onSetMode(CCObject*);
+    void onSetFollower(CCObject*);
+    void onPickColor(CCObject*);
+    void updateColor(ccColor4B const& color) override;
+    void onClose(CCObject*) override;
 public:
-    BarColorValue(std::string const& key, std::string const& mod, BarColor b_color)
-      : SettingValue(key, mod), bar_color(b_color) {}
+    static AdvancedMenu* create() {
+        auto ret = new AdvancedMenu();
+        if (ret && ret->init(420.f, 280.f)) {
+            ret->autorelease();
+            return ret;
+        }
+        CC_SAFE_DELETE(ret);
+        return nullptr;
+    }
+};
 
+class AdvancedSetting : public SettingV3 {
+public:
+    static Result<std::shared_ptr<AdvancedSetting>> parse(std::string const& key, std::string const& modID, matjson::Value const& json) {
+        auto res = std::make_shared<AdvancedSetting>();
+        auto root = checkJson(json, "AdvancedSetting");
+        res->init(key, modID, root);
+        res->parseNameAndDescription(root);
+        res->parseEnableIf(root);
+        
+        root.checkUnknownKeys();
+        return root.ok(res);
+    }
     bool load(matjson::Value const& json) override {
-        try {
-            bar_color = BarColor {
-                .mode = json["mode"].as_int(),
-                .follower = json["follower"].as_int(),
-                .color = ccColor3B(
-                    json["r"].as_int(),
-                    json["g"].as_int(),
-                    json["b"].as_int()
-                )
-            };
-            return true;
-        } catch(...) {
-            return false;
-        }
+        return true;
     }
-
     bool save(matjson::Value& json) const override {
-        // save the value of the setting into json,
-        // returning true if saving was succesful
-        json["mode"] = bar_color.mode;
-        json["follower"] = bar_color.follower;
-        json["r"] = bar_color.color.r;
-        json["g"] = bar_color.color.g;
-        json["b"] = bar_color.color.b;
         return true;
     }
-    void setVal(BarColor val){
-        bar_color = val;
+    bool isDefaultValue() const override {
+        return true;
     }
-    BarColor getVal() const {
-        return bar_color;
-    }
-
-    SettingNode* createNode(float width);
+    void reset() override {};
+    SettingNodeV3* createNode(float width) override;
 };
-/*
-class MyDelegate : public SettingNodeDelegate, public ColorPickPopupDelegate {
-public:
-    //virtual void updateColor(ccColor4B const &color) override;
-        //ColorPickPopupDelegate::updateColor(color);
-    virtual void setColor(ccColor4B const &color) = 0;
 
-    //}
-};*/
-
-class BarColorNode : public SettingNode {
+class AdvancedSettingNode : public SettingNodeV3 {
 protected:
-    BarColor m_current;
+    ButtonSprite* m_buttonSprite;
+    CCMenuItemSpriteExtra* m_button;
 
-    const char* mode[3] = {"Default", "Sync", "Manual"};
-    const char* follower[3] = {"Main", "Secondary", "Glow"};
+    bool init(std::shared_ptr<AdvancedSetting> setting, float width) {
+        if (!SettingNodeV3::init(setting, width))
+            return false;
+        
+        m_buttonSprite = ButtonSprite::create("Config", "goldFont.fnt", "GJ_button_01.png", .8f);
+        m_buttonSprite->setScale(.6f);
+        m_button = CCMenuItemSpriteExtra::create(
+            m_buttonSprite, this, menu_selector(AdvancedSettingNode::onButton)
+        );
+        this->getButtonMenu()->addChildAtPosition(m_button, Anchor::Center);
+        this->getButtonMenu()->setContentWidth(60);
+        this->getButtonMenu()->updateLayout();
 
-    bool init(BarColorValue* value, float width);
-
-    void changeVisibleState();
-    ccColor3B getActualColor();
-
-    void onModeSwitch(CCObject *sender);
-    void onSyncSwitch(CCObject *sender);
-    void onPickColor(CCObject *sender);
-    void onDescription(CCObject *sender);
+        this->updateState(nullptr);
+        
+        return true;
+    }
+    void updateState(CCNode* invoker) override {
+        SettingNodeV3::updateState(invoker);
+        auto shouldEnable = this->getSetting()->shouldEnable();
+        m_button->setEnabled(shouldEnable);
+        m_buttonSprite->setCascadeColorEnabled(true);
+        m_buttonSprite->setCascadeOpacityEnabled(true);
+        m_buttonSprite->setOpacity(shouldEnable ? 255 : 155);
+        m_buttonSprite->setColor(shouldEnable ? ccWHITE : ccGRAY);
+    }
+    void onButton(CCObject*) {
+        AdvancedMenu::create()->show();
+    }
+    void onCommit() override {}
+    void onResetToDefault() override {}
 
 public:
-    // setting
-    void setColor(ccColor4B const &color);    
-    void commit() override {
-        static_cast<BarColorValue*>(m_value)->setVal(m_current);
-        this->dispatchCommitted();
-    }
-
-    bool hasUncommittedChanges() override {
-        return !(m_current == static_cast<BarColorValue*>(m_value)->getVal());
-    }
-
-    bool hasNonDefaultValue() override;
-
-    void resetToDefault() override;
-
-    static BarColorNode* create(BarColorValue* value, float width) {
-        auto ret = new BarColorNode();
-        if (ret->init(value, width)) {
+    static AdvancedSettingNode* create(std::shared_ptr<AdvancedSetting> setting, float width) {
+        auto ret = new AdvancedSettingNode();
+        if (ret && ret->init(setting, width)) {
             ret->autorelease();
             return ret;
         }
-
-        delete ret;
+        CC_SAFE_DELETE(ret);
         return nullptr;
     }
-};
-
-template<>
-struct SettingValueSetter<BarColor> {
-    static BarColor get(SettingValue* setup) {
-        auto s = static_cast<BarColorValue*>(setup);
-        struct BarColor val = s->getVal();
-        return val;
-    };
-    static void set(SettingValue* s, BarColor const& value) {
-        static_cast<BarColorValue*>(s)->setVal(value);
-    };
-};
-
-class MyColorPickPopup : public ColorPickPopup {
-protected:
-    BarColorNode* node;
-    /*
-    bool init(float width, float height, const cocos2d::ccColor4B &args, bool arg, const char *bg, cocos2d::CCRect bgRect, BarColorNode *node) {
-        if(!ColorPickPopup::init(width, height, args, arg, bg, bgRect)) return false;
-        this->node = node;
-        return true;
-    }*/
-    void onClose(CCObject *sender) override{
-        node->setColor(m_color);
-        ColorPickPopup::onClose(sender);
+    bool hasUncommittedChanges() const override {
+        return false;
     }
-public: 
-    static MyColorPickPopup* create(ccColor4B color, bool isRGBA, BarColorNode *node) {
-        auto ret = new MyColorPickPopup();
-        if (ret->initAnchored(400.f, (isRGBA ? 290.f : 240.f), color, isRGBA)) {
-            ret->node = node;
-            ret->autorelease();
-            return ret;
-        }
-        delete ret;
-        return nullptr;
+    bool hasNonDefaultValue() const override {
+        return false;
+    }
+
+    std::shared_ptr<AdvancedSetting> getSetting() const {
+        return std::static_pointer_cast<AdvancedSetting>(SettingNodeV3::getSetting());
     }
 };
