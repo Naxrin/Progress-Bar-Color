@@ -108,10 +108,11 @@ class $modify(LevelSelectLayer) {
 		CCSprite *normal_bar, *practice_bar;
 
 		auto children = this->getChildren();
-		auto scroll = getChildOfType<BoomScrollLayer>(this, 0);
-		if (! scroll || !scroll->getChildren()) return true;
+		auto scroll = getChildByType<BoomScrollLayer>(0);
+		if (!scroll || !scroll->getChildren())
+			return true;
 		auto ext = static_cast<CCNode*>(scroll->getChildren()->objectAtIndex(0));
-		for (auto* obj: CCArrayExt<CCObject*>(ext->getChildren())){
+		for (CCObject* obj: CCArrayExt<CCObject*>(ext->getChildren())){
 			auto lvlpage = static_cast<CCNode*>(obj);
 
 			// Overcharged Main Levels fix

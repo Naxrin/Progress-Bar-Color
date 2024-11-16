@@ -21,12 +21,12 @@ template<>
 struct matjson::Serialize<BarColor> {
     static Result<BarColor> fromJson(matjson::Value const& value) {
         return Ok(BarColor{
-            .mode = (uint8_t) value["mode"].asInt().unwrap(),
-            .follower = (uint8_t) value["follower"].asInt().unwrap(),
+            .mode = (int) value["mode"].asInt().unwrap(),
+            .follower = (int) value["follower"].asInt().unwrap(),
             .color = ccColor3B(
-                (uint8_t) value["r"].asInt().unwrap(),
-                (uint8_t) value["g"].asInt().unwrap(),
-                (uint8_t) value["b"].asInt().unwrap()
+                (int) value["r"].asInt().unwrap(),
+                (int) value["g"].asInt().unwrap(),
+                (int) value["b"].asInt().unwrap()
             )
         });
     }
@@ -42,11 +42,11 @@ struct matjson::Serialize<BarColor> {
     }
     static bool isJson(matjson::Value const& json) {
         if (!json.isObject()) return false;
-        if (!(json.contains("mode") && json["mode"].isNumber() && (uint8_t) json["mode"].asInt().unwrap() < 3 && (uint8_t) json["mode"].asInt().unwrap() >= 0)) return false;
-        if (!(json.contains("follower") && json["follower"].isNumber() && (uint8_t) json["follower"].asInt().unwrap() < 3 && (uint8_t) json["follower"].asInt().unwrap() >= 0)) return false;
-        if (!(json.contains("r") && json["r"].isNumber() && (uint8_t)json["r"].asInt().unwrap() < 256 && (uint8_t)json["r"].asInt().unwrap() >= 0)) return false;
-        if (!(json.contains("g") && json["g"].isNumber() && (uint8_t)json["g"].asInt().unwrap() < 256 && (uint8_t)json["g"].asInt().unwrap() >= 0)) return false;
-        if (!(json.contains("b") && json["b"].isNumber() && (uint8_t)json["b"].asInt().unwrap() < 256 && (uint8_t)json["b"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("mode") && json["mode"].isNumber() && (int) json["mode"].asInt().unwrap() < 3 && (int) json["mode"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("follower") && json["follower"].isNumber() && (int) json["follower"].asInt().unwrap() < 3 && (int) json["follower"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("r") && json["r"].isNumber() && (int)json["r"].asInt().unwrap() < 256 && (int)json["r"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("g") && json["g"].isNumber() && (int)json["g"].asInt().unwrap() < 256 && (int)json["g"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("b") && json["b"].isNumber() && (int)json["b"].asInt().unwrap() < 256 && (int)json["b"].asInt().unwrap() >= 0)) return false;
         return true;
     }
 };
