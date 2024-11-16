@@ -19,34 +19,34 @@ static BarColor def2 = BarColor{.mode = 0, .follower = 0, .color=ccColor3B(255, 
 
 template<>
 struct matjson::Serialize<BarColor> {
-    static BarColor from_json(matjson::Value const& value) {
-        return BarColor {
-            .mode = value["mode"].as_int(),
-            .follower = value["follower"].as_int(),
+    static Result<BarColor> fromJson(matjson::Value const& value) {
+        return Ok(BarColor{
+            .mode = (int) value["mode"].asInt().unwrap(),
+            .follower = (int) value["follower"].asInt().unwrap(),
             .color = ccColor3B(
-                value["r"].as_int(),
-                value["g"].as_int(),
-                value["b"].as_int()
+                (int) value["r"].asInt().unwrap(),
+                (int) value["g"].asInt().unwrap(),
+                (int) value["b"].asInt().unwrap()
             )
-        };
+        });
     }
 
-    static matjson::Value to_json(BarColor const& value) {
-        auto obj = matjson::Object();
-        obj["mode"] = value.mode;
-        obj["follower"] = value.follower;
-        obj["r"] = value.color.r;
-        obj["g"] = value.color.g;
-        obj["b"] = value.color.b;
-        return obj;
+    static matjson::Value toJson(BarColor const& value) {
+        return matjson::makeObject({
+            {"mode", value.mode},
+            {"follower", value.follower},
+            {"r", value.color.r},
+            {"g", value.color.g},
+            {"b", value.color.b}
+        });
     }
-    static bool is_json(matjson::Value const& json) {
-        if (!json.is_object()) return false;
-        if (!(json.as_object().contains("mode") && json["mode"].is_number() && json["mode"].as_int() < 3 && json["mode"].as_int() >= 0)) return false;
-        if (!(json.as_object().contains("follower") && json["follower"].is_number() && json["follower"].as_int() < 3 && json["follower"].as_int() >= 0)) return false;
-        if (!(json.as_object().contains("r") && json["r"].is_number() && json["r"].as_int() < 256 && json["r"].as_int() >= 0)) return false;
-        if (!(json.as_object().contains("g") && json["g"].is_number() && json["g"].as_int() < 256 && json["g"].as_int() >= 0)) return false;
-        if (!(json.as_object().contains("b") && json["b"].is_number() && json["b"].as_int() < 256 && json["b"].as_int() >= 0)) return false;
+    static bool isJson(matjson::Value const& json) {
+        if (!json.isObject()) return false;
+        if (!(json.contains("mode") && json["mode"].isNumber() && (int) json["mode"].asInt().unwrap() < 3 && (int) json["mode"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("follower") && json["follower"].isNumber() && (int) json["follower"].asInt().unwrap() < 3 && (int) json["follower"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("r") && json["r"].isNumber() && (int)json["r"].asInt().unwrap() < 256 && (int)json["r"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("g") && json["g"].isNumber() && (int)json["g"].asInt().unwrap() < 256 && (int)json["g"].asInt().unwrap() >= 0)) return false;
+        if (!(json.contains("b") && json["b"].isNumber() && (int)json["b"].asInt().unwrap() < 256 && (int)json["b"].asInt().unwrap() >= 0)) return false;
         return true;
     }
 };
@@ -66,7 +66,7 @@ protected:
 public:
     static AdvancedMenu* create() {
         auto ret = new AdvancedMenu();
-        if (ret && ret->init(420.f, 280.f)) {
+        if (ret && ret->initAnchored(420.f, 280.f)) {
             ret->autorelease();
             return ret;
         }
@@ -75,17 +75,16 @@ public:
     }
 };
 
-class AdvancedSetting : public SettingV3 {
+class AdvancedSetting : public SettingBaseValueV3<BarColor> {
 public:
-    static Result<std::shared_ptr<AdvancedSetting>> parse(std::string const& key, std::string const& modID, matjson::Value const& json) {
+    static Result<std::shared_ptr<SettingV3>> parse(std::string const& key, std::string const& modID, matjson::Value const& json) {
         auto res = std::make_shared<AdvancedSetting>();
         auto root = checkJson(json, "AdvancedSetting");
         res->init(key, modID, root);
         res->parseNameAndDescription(root);
         res->parseEnableIf(root);
-        
         root.checkUnknownKeys();
-        return root.ok(res);
+        return root.ok(std::static_pointer_cast<SettingV3>(res));
     }
     bool load(matjson::Value const& json) override {
         return true;
