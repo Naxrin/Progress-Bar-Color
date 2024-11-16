@@ -19,7 +19,7 @@ SettingNodeV3* AdvancedSetting::createNode(float width) {
 }
 
 bool AdvancedMenu::setup() {
-    auto winSize = CCDirector::sharedDirector()->getWinSize();
+    //auto winSize = CCDirector::sharedDirector()->getWinSize();
     this->setTitle("Advanced Setup Menu");
     // current Tab
     currentTab = Mod::get()->getSavedValue<int64_t>("current-tab", 0);
@@ -31,18 +31,18 @@ bool AdvancedMenu::setup() {
     // layer
     auto ml = static_cast<CCNode*>(this->getChildren()->objectAtIndex(0));
     ml->setID("main-layer");
-    auto menu = getChildOfType<CCMenu>(ml, 0);
+    auto menu = ml->getChildByType<CCMenu>(0);
     menu->setID("close-menu");
 
     // division line
     auto divisionLine = CCLayerColor::create(ccColor4B(255, 255, 255, 192));
-    divisionLine->setPosition(CCPoint(winSize.width/2-85.f, winSize.height/2-120.f));
+    divisionLine->setPosition(CCPoint(125.f, 20.f));
     divisionLine->setContentSize(CCSize(2.f, 220.f));
     ml->addChild(divisionLine);
 
     // Item Switch Menu
     auto itemsMenu = CCMenu::create();
-    itemsMenu->setPosition(CCPoint(winSize.width/2-190.f, winSize.height/2-130.f));
+    itemsMenu->setPosition(CCPoint(15.f, 10.f));
     itemsMenu->setContentSize(CCSize(100.f, 240.f));
     itemsMenu->setID("items-menu");
     ml->addChild(itemsMenu);
@@ -70,7 +70,7 @@ bool AdvancedMenu::setup() {
     }
     // Setup Workspace
     auto setupMenu = CCMenu::create();
-    setupMenu->setPosition(CCPoint(winSize.width/2-75.f, winSize.height/2-100.f));
+    setupMenu->setPosition(CCPoint(135.f, 40.f));
     setupMenu->setContentSize(CCSize(260.f, 180.f));
     setupMenu->setID("setup-menu");
     ml->addChild(setupMenu);
@@ -217,7 +217,7 @@ bool AdvancedMenu::setup() {
     auto applySprite = ButtonSprite::create("Apply", "goldFont.fnt", "GJ_button_01.png", 0.8);
     applySprite->setScale(0.8);
     auto applyBtn = CCMenuItemSpriteExtra::create(applySprite, this, menu_selector(AdvancedMenu::onClose));
-    applyBtn->setPosition(CCPoint(170.f, -110.f));
+    applyBtn->setPosition(CCPoint(380.f, 30.f));
     menu->addChild(applyBtn);
 
     initialize();
