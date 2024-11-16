@@ -1,3 +1,8 @@
+# 3.2.0
+Port to Geode 4.x  
+New Icon  
+matjson rewrite @_@  
+
 # 2.2.0
 #### <cy>Better settings UI!</c>
 Former setting UI is too complex and confusing ~~even a bit buggy~~, I'm sry 4 that.  
