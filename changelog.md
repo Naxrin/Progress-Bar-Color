@@ -1,3 +1,6 @@
+# 3.2.1
+Nothing but fix some possible gd verion issues.  
+
 # 3.2.0
 Port to Geode 4.x  
 New Icon  
