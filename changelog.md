@@ -1,3 +1,6 @@
+# 3.2.2
+Polish menu animation.
+
 # 3.2.1
 Nothing but fix some possible gd verion issues.  
 

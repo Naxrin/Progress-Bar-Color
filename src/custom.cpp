@@ -306,15 +306,15 @@ void AdvancedMenu::onSetMode(CCObject* sender) {
                 Y -= height[i];            
                 static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->runAction(CCTintTo::create(0.15, 0, 255, 0));
                 if (i) {
-                    setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCScaleTo::create(0.15, 1));//->setVisible(false);
-                    setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCFadeIn::create(0.15));
+                    setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.15, 1, 1)));//->setVisible(false);
+                    setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCEaseExponentialOut::create(CCFadeIn::create(0.15)));
                 }
             }        
             if (i == currentConfig.mode) {
-                static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->runAction(CCTintTo::create(0.15, 255, 255, 255));//->setColor(ccColor3B(0, 255, 0));
+                static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->runAction(CCTintTo::create(0.15, 127, 127, 127));//->setColor(ccColor3B(0, 255, 0));
                 if (i) {
-                    setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCScaleTo::create(0.15, 0));//->setVisible(false);
-                    setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCFadeOut::create(0.15));                    
+                    setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.15, 1, 0)));//->setVisible(false);
+                    setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCEaseExponentialOut::create(CCFadeOut::create(0.15)));                    
                 }
             }   
         }
