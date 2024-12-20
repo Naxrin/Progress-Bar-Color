@@ -35,7 +35,7 @@ bool AdvancedMenu::setup() {
     menu->setID("close-menu");
 
     // division line
-    auto divisionLine = CCLayerColor::create(ccColor4B(255, 255, 255, 192));
+    auto divisionLine = CCLayerColor::create(ccc4(255, 255, 255, 192));
     divisionLine->setPosition(CCPoint(125.f, 20.f));
     divisionLine->setContentSize(CCSize(2.f, 220.f));
     ml->addChild(divisionLine);
