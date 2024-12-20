@@ -1,3 +1,7 @@
+# 3.2.3
+MAC support returns (huge thanks to mat on CCSequence fix)  
+Fix the Official Levels Menu Out of popup frame issue  
+
 # 3.2.2
 Polish menu animation.
 
@@ -12,7 +16,7 @@ matjson rewrite @_@
 # 2.2.0
 #### <cy>Better settings UI!</c>
 Former setting UI is too complex and confusing ~~even a bit buggy~~, I'm sry 4 that.  
-Also such config menu logic will be applied to the next Chroma Icons update ~~when I have time~~
+Also such config menu logic will be inherited to the next Chroma Icons update.
 #### <cy>Compatible with Overcharged Menus</c>
 The two mods won't fight now.  
 Also in this update huge effort is made to avoid crash if any mods conflict with it again in the future.

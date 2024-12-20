@@ -1,7 +1,7 @@
 #include "head.hpp"
 
 const char* colors[3] = {"Main", "Secondary", "Glow"};
-std::string titles[4] = {"Level Info Menu", "Pause Menu", "Official Levels Menu", "Quests Page"};
+std::string titles[4] = {"Level Info Menu", "Pause Menu", "Official Levels", "Quests Page"};
 std::string items[5] = {"Normal", "Practice", "Top", "Middle", "Bottom"};
 
 const std::string tabs[9] = {
