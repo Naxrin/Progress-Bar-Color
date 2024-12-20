@@ -60,7 +60,7 @@ bool AdvancedMenu::setup() {
         auto label = CCLabelBMFont::create(items[i<6 ? i%2 : i-4].c_str(), "bigFont.fnt", 140.f);
         label->setScale(0.4);
         if (i == currentTab)
-            label->setColor(ccColor3B(0, 255, 0));
+            label->setColor(ccc3(0, 255, 0));
         
         auto button = CCMenuItemSpriteExtra::create(label, this, menu_selector(AdvancedMenu::onSwitchTab));
         button->setPosition(CCPoint(50.f, i<6 ? 205.f-(i/2)*50.f-(i%2)*15.f : 145-i*15.f));
@@ -107,7 +107,7 @@ bool AdvancedMenu::setup() {
     auto defaultHint = CCLabelBMFont::create("Follow common config outside.", "chatFont.fnt", 260.f);
     defaultHint->setPosition(CCPoint(20.f, 5.f));
     defaultHint->setAnchorPoint(CCPoint(0.f, 0.5));
-    defaultHint->setColor(ccColor3B(255, 255, 0));
+    defaultHint->setColor(ccc3(255, 255, 0));
     defaultHint->setScale(0.7);
     setupDefaultMenu->addChild(defaultHint);
 
@@ -134,7 +134,7 @@ bool AdvancedMenu::setup() {
     auto followHint = CCLabelBMFont::create("Sync with a player color channel.", "chatFont.fnt", 260.f);
     followHint->setPosition(CCPoint(20.f, 25.f));
     followHint->setAnchorPoint(CCPoint(0.f, 0.5));
-    followHint->setColor(ccColor3B(255, 255, 0));
+    followHint->setColor(ccc3(255, 255, 0));
     followHint->setScale(0.7);
     setupFollowMenu->addChild(followHint);
 
@@ -188,7 +188,7 @@ bool AdvancedMenu::setup() {
     auto manualHint = CCLabelBMFont::create("Pick the color manually.", "chatFont.fnt", 260.f);
     manualHint->setPosition(CCPoint(20.f, 30.f));
     manualHint->setAnchorPoint(CCPoint(0.f, 0.5));
-    manualHint->setColor(ccColor3B(255, 255, 0));
+    manualHint->setColor(ccc3(255, 255, 0));
     manualHint->setScale(0.7);
     setupManualMenu->addChild(manualHint);
 
@@ -241,7 +241,7 @@ void AdvancedMenu::initialize() {
         if (i == currentConfig.mode) {
             Y -= height[i];
             // green label color
-            static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->setColor(ccColor3B(0, 255, 0));
+            static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->setColor(ccc3(0, 255, 0));
             if (i) {
                 setupMenu->getChildByTag(i)->getChildByID("sub-menu")->setScale(1);
                 static_cast<CCMenu*>(setupMenu->getChildByTag(i)->getChildByID("sub-menu"))->setOpacity(255);
@@ -249,7 +249,7 @@ void AdvancedMenu::initialize() {
         }
         else  {
             // white label color
-            static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->setColor(ccColor3B(255, 255, 255));
+            static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->setColor(ccc3(255, 255, 255));
             if (i) {
                 setupMenu->getChildByTag(i)->getChildByID("sub-menu")->setScale(0);
                 static_cast<CCMenu*>(setupMenu->getChildByTag(i)->getChildByID("sub-menu"))->setOpacity(0);
@@ -311,7 +311,7 @@ void AdvancedMenu::onSetMode(CCObject* sender) {
                 }
             }        
             if (i == currentConfig.mode) {
-                static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->runAction(CCTintTo::create(0.15, 127, 127, 127));//->setColor(ccColor3B(0, 255, 0));
+                static_cast<CCLabelBMFont*>(setupMenu->getChildByTag(i)->getChildByID("title-label"))->runAction(CCTintTo::create(0.15, 127, 127, 127));//->setColor(ccc3(0, 255, 0));
                 if (i) {
                     setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.15, 1, 0)));//->setVisible(false);
                     setupMenu->getChildByTag(i)->getChildByID("sub-menu")->runAction(CCEaseExponentialOut::create(CCFadeOut::create(0.15)));                    

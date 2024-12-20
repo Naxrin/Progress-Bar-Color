@@ -14,8 +14,8 @@ struct BarColor {
     };
 };
 
-static BarColor def1 = BarColor{.mode = 0, .follower = 0, .color=ccColor3B(0, 255, 0)};
-static BarColor def2 = BarColor{.mode = 0, .follower = 0, .color=ccColor3B(255, 255, 0)};
+static BarColor def1 = BarColor{.mode = 0, .follower = 0, .color=ccc3(0, 255, 0)};
+static BarColor def2 = BarColor{.mode = 0, .follower = 0, .color=ccc3(255, 255, 0)};
 
 template<>
 struct matjson::Serialize<BarColor> {
@@ -23,7 +23,7 @@ struct matjson::Serialize<BarColor> {
         return Ok(BarColor{
             .mode = (int) value["mode"].asInt().unwrap(),
             .follower = (int) value["follower"].asInt().unwrap(),
-            .color = ccColor3B(
+            .color = ccc3(
                 (int) value["r"].asInt().unwrap(),
                 (int) value["g"].asInt().unwrap(),
                 (int) value["b"].asInt().unwrap()

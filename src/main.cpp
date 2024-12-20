@@ -50,7 +50,6 @@ void paint(auto target, std::string key, std::string place) {
 	// manual
 	case 2:
 		target->setColor(advcfg.color);
-		//log::info("paint {} {} {}", c.r, c.g, c.b);		
 		break;
 	default:
 		break;
@@ -58,9 +57,7 @@ void paint(auto target, std::string key, std::string place) {
 }
 
 class $modify(PauseLayer) {
-	static void onModify(auto& self) {
-        self.setHookPriority("PauseLayer::init", -100);}
-    
+
 	void customSetup() {
 		PauseLayer::customSetup();
 

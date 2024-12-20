@@ -23,7 +23,7 @@ jobs:
           os: ubuntu-latest
           target: Android64
 
-        - name: macos
+        - name: macOS
           os: macos-latest
 
     name: ${{ matrix.config.name }}
