@@ -84,6 +84,7 @@ bool MultiColorCell::setup() {
     this->m_btnZero = CCMenuItemSpriteExtra::create(sprZero, this, menu_selector(MultiColorCell::onButton));
     m_btnZero->setPosition(CCPoint(10.f, 10.f));
     m_btnZero->setID("zero");
+    m_btnZero->setTag(1);
     this->addChild(m_btnZero);
 
     auto lbfZero = CCLabelBMFont::create("Initial", "bigFont.fnt", 70.f);
@@ -98,6 +99,7 @@ bool MultiColorCell::setup() {
     this->m_btnHdrd = CCMenuItemSpriteExtra::create(sprHdrd, this, menu_selector(MultiColorCell::onButton));
     m_btnHdrd->setPosition(CCPoint(110.f, 10.f));
     m_btnHdrd->setID("hdrd");
+    m_btnHdrd->setTag(2);
     this->addChild(m_btnHdrd);
 
     auto lbfHdrd = CCLabelBMFont::create("Terminal", "bigFont.fnt", 70.f);
@@ -288,7 +290,7 @@ void AdvancedMenu::initialize() {
             static_cast<SetupCell*>(node)->setVal(m_currentConfig);
 
         // show
-        if ((node->getTag() == m_currentConfig.mode || node->getID() == "title") && (this->getID() != "instant" || tabs[m_tab].find("pause"))) {
+        if (node->getTag() == m_currentConfig.mode || node->getID() == "title") {
             node->setScaleY(node->getID() == "hint" ? 0.7 : 1);
             Y -= node->getScaledContentHeight();            
         } else
@@ -319,7 +321,7 @@ void AdvancedMenu::switchMode(int mode) {
             else if (node->getTag() == m_currentConfig.mode)
                 static_cast<ModeCell*>(node)->toggle();
         } else
-            display = node->getTag() == mode && (this->getID() != "instant" || tabs[m_tab].find("pause"));
+            display = node->getTag() == mode;
 
         if (node->getTag() == mode && node->getID() != "title")
             node->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.2, h, h)));

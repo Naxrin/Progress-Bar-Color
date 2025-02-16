@@ -1,3 +1,6 @@
+# 3.3.1
+Fix a severely stupid bug  
+
 # 3.3.0
 Progress related mode (Chroma Icons side note)  
 Random mode (experimental)  
