@@ -1,3 +1,9 @@
+# 3.3.0
+Progress related mode (Chroma Icons side note)  
+Random mode (experimental)  
+Follow mode supports colors in Separate Dual Icons (surely, SDI loaded first of all)  
+bugfix  
+
 # 3.2.3
 MAC support returns (huge thanks to mat on CCSequence fix)  
 Fix the Official Levels Menu Out of popup frame issue  

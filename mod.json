@@ -1,15 +1,15 @@
 {
-	"geode": "4.1.0",
+	"geode": "4.0.1",
 	"gd":{
 		"win":"2.2074",
 		"android":"2.2074",
 		"mac":"2.2074"
 	},
-	"version": "v3.2.3",
+	"version": "v3.3.0",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
-	"description": "This mod lets you customize your progress bar color!You can set your normal/practice progress bar manually or follow your player colors.",
+	"description": "Your progress bar color modifier",
 	"repository": "https://github.com/Naxrin/Progress-Bar-Color",
 	"dependencies": [
 		{
@@ -25,16 +25,16 @@
         },
 		"normal-default-mode": {
             "name": "Mode",
-            "description": "Pick the way you hope to set your <cg>Normal Progress Bar</c> color\nOriginal: Green\nFollow: Sync with player color channel\nManual: Set it manually",
+            "description": "Pick the way you hope to set your <cg>Normal Progress Bar</c> color\nOriginal: Green\nFollow: Sync with player color channel\nManual: Set it manually\nProgress: Tint Regarding the progress of this progress bar\nRandom: Experimental Option",
             "type": "string",
-			"one-of": ["Original", "Follow", "Manual"],
+			"one-of": ["Original", "Follow", "Manual", "Progress", "Random"],
 			"default": "Original"
         },
 		"normal-default-follower": {
             "name": "Follower",
             "description": "Pick the color channel you hope your <cg>Normal Progress Bar</c> color follow",
             "type": "string",
-			"one-of": ["Main", "Secondary", "Glow"],
+			"one-of": ["Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"],
 			"default": "Main"
         },
 		"normal-default-color": {
@@ -43,6 +43,12 @@
             "type": "rgb",
 			"default": "00FF00"
         },
+		"normal-default-another": {
+            "name": "Another Color",
+            "description": "Pick the color manually as the 2nd color of your <cg>Normal Progress Bar</c> when you pick <cy>Progress</c> mode",
+            "type": "rgb",
+			"default": "FFFFFF"
+        },
 		"practice-progress-bars": {
             "name": "Practice Progress Bars",
             "description": "Modify Levels' Practice Progress Bar Colors in case you wanna set them in the same style everywhere",
@@ -50,16 +56,16 @@
         },
 		"practice-default-mode": {
             "name": "Mode",
-            "description": "Pick the way you hope to set your <cg>Practice Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually",
+            "description": "Pick the way you hope to set your <cg>Practice Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually\nProgress: Tint Regarding the progress of this progress bar\nRandom: Experimental Option",
             "type": "string",
-			"one-of": ["Original", "Follow", "Manual"],
+			"one-of": ["Original", "Follow", "Manual", "Progress", "Random"],
 			"default": "Original"
         },
 		"practice-default-follower": {
             "name": "Follower",
             "description": "Pick the color channel you hope your <cg>Practice Progress Bar</c> color follow",
             "type": "string",
-			"one-of": ["Main", "Secondary", "Glow"],
+			"one-of": ["Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"],
 			"default": "Main"
         },
 		"practice-default-color": {
@@ -68,7 +74,18 @@
             "type": "rgb",
 			"default": "00FFFF"
         },
-
+		"practice-default-another": {
+            "name": "Another Color",
+            "description": "Pick the color manually as the 2nd color of your <cg>Practice Progress Bar</c> when you pick <cy>Progress</c> mode",
+            "type": "rgb",
+			"default": "FFFFFF"
+        },
+		"practice-default-instant": {
+            "name": "New Best Mode",
+            "description": "Instead of gradient logic: for Pause menu, paint another color if you are hitting new best and manual color else wise; for other cases, always paint manual colors",
+            "type": "bool",
+			"default": false
+        },
 		"quest-bars": {
             "name": "Quest Progress Bars",
             "description": "Modify Quest Progress Bar Colors here in case you wanna set all of the three lines together.",
@@ -76,16 +93,16 @@
         },
 		"quest-default-mode": {
             "name": "Mode",
-            "description": "Pick the way you hope to set your <cg>Quest Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually",
+            "description": "Pick the way you hope to set your <cg>Quest Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually\nProgress: Tint Regarding the progress of this progress bar\nRandom: Experimental Option",
             "type": "string",
-			"one-of": ["Original", "Follow", "Manual"],
+			"one-of": ["Original", "Follow", "Manual", "Progress", "Random"],
 			"default": "Original"
         },
 		"quest-default-follower": {
             "name": "Follower",
             "description": "Pick the color channel you hope your <cg>Quest Progress Bar</c> color follow",
             "type": "string",
-			"one-of": ["Main", "Secondary", "Glow"],
+			"one-of": ["Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"],
 			"default": "Main"
         },
 		"quest-default-color": {
@@ -93,6 +110,12 @@
             "description": "Pick the color manually for your <cg>Quest Progress Bar</c>",
             "type": "rgb",
 			"default": "00FF00"
+        },
+		"quest-default-another": {
+            "name": "Another Color",
+            "description": "Pick the color manually as the 2nd color of your <cg>Quest Progress Bar</c> when you pick <cy>Progress</c> mode",
+            "type": "rgb",
+			"default": "FFFFFF"
         },
 		"advanced-options": {
 			"name": "Advanced Options",

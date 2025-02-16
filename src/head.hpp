@@ -1,33 +1,67 @@
 #pragma once
+
 #include <Geode/loader/SettingV3.hpp>
 #include <Geode/modify/CCMenuItemToggler.hpp>
+
 using namespace geode::prelude;
 
+static const char* followeds[6] = {"Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"};
+const std::string titles[4] = {"Level Info Menu", "Pause Menu", "Official Levels", "Quests Page"};
+const std::string items[5] = {"Normal", "Practice", "Top", "Middle", "Bottom"};
+const std::string modes[5] = {"Default", "Follow", "Manual", "Progress", "Random"};
+
+const std::string tabs[9] = {
+    "info-menu-normal", "info-menu-practice",
+    "pause-menu-normal", "pause-menu-practice", 
+    "official-levels-normal", "official-levels-practice",
+    "quest-top", "quest-middle", "quest-bottom"
+};
+
 // struct setup for a color channel
-/**/
 struct BarColor {
     int mode;
     int follower;
     ccColor3B color;
+    ccColor3B colorZero;
+    ccColor3B colorHdrd;
     bool operator == (const BarColor &c) const{
 	    return ((mode == c.mode) && (follower == c.follower) && (color == c.color));
     };
 };
 
-static BarColor def1 = BarColor{.mode = 0, .follower = 0, .color=ccc3(0, 255, 0)};
-static BarColor def2 = BarColor{.mode = 0, .follower = 0, .color=ccc3(255, 255, 0)};
+// normal & quest
+const static BarColor def1 = BarColor{
+    .mode = 0,
+    .follower = 0,
+    .color=ccc3(0, 255, 0),
+    .colorZero=ccc3(0, 255, 0),
+    .colorHdrd=ccc3(0, 255, 0)
+};
+
+// practice
+const static BarColor def2 = BarColor{
+    .mode = 0,
+    .follower = 0,
+    .color=ccc3(255, 255, 0),
+    .colorZero=ccc3(255, 255, 0),
+    .colorHdrd=ccc3(255, 255, 0)
+};
 
 template<>
 struct matjson::Serialize<BarColor> {
     static Result<BarColor> fromJson(matjson::Value const& value) {
         return Ok(BarColor{
-            .mode = (int) value["mode"].asInt().unwrap(),
-            .follower = (int) value["follower"].asInt().unwrap(),
+            .mode = (int) value["mode"].asInt().unwrap() % 5,
+            .follower = (int) value["follower"].asInt().unwrap() % 6,
             .color = ccc3(
                 (int) value["r"].asInt().unwrap(),
                 (int) value["g"].asInt().unwrap(),
                 (int) value["b"].asInt().unwrap()
-            )
+            ),
+            .colorZero = value.contains("zero") ? value["zero"].asString().andThen([](auto str) { return cc3bFromHexString(str, true); })
+                .unwrapOr(ccc3(255,255,255)) : ccc3(255, 255, 255),
+            .colorHdrd = value.contains("hdrd") ? value["hdrd"].asString().andThen([](auto str) { return cc3bFromHexString(str, true); })
+                .unwrapOr(ccc3(255,255,255)) : ccc3(255, 255, 255)
         });
     }
 
@@ -37,33 +71,273 @@ struct matjson::Serialize<BarColor> {
             {"follower", value.follower},
             {"r", value.color.r},
             {"g", value.color.g},
-            {"b", value.color.b}
+            {"b", value.color.b},
+            {"zero", cc3bToHexString(value.colorZero)},
+            {"hdrd", cc3bToHexString(value.colorHdrd)}
         });
     }
     static bool isJson(matjson::Value const& json) {
         if (!json.isObject()) return false;
-        if (!(json.contains("mode") && json["mode"].isNumber() && (int) json["mode"].asInt().unwrap() < 3 && (int) json["mode"].asInt().unwrap() >= 0)) return false;
-        if (!(json.contains("follower") && json["follower"].isNumber() && (int) json["follower"].asInt().unwrap() < 3 && (int) json["follower"].asInt().unwrap() >= 0)) return false;
-        if (!(json.contains("r") && json["r"].isNumber() && (int)json["r"].asInt().unwrap() < 256 && (int)json["r"].asInt().unwrap() >= 0)) return false;
-        if (!(json.contains("g") && json["g"].isNumber() && (int)json["g"].asInt().unwrap() < 256 && (int)json["g"].asInt().unwrap() >= 0)) return false;
-        if (!(json.contains("b") && json["b"].isNumber() && (int)json["b"].asInt().unwrap() < 256 && (int)json["b"].asInt().unwrap() >= 0)) return false;
+        if (!json.contains("mode") || !json["mode"].isNumber()) return false;
+        if (!json.contains("follower") || !json["follower"].isNumber()) return false;
+        if (!json.contains("r") || !json["r"].isNumber()) return false;
+        if (!json.contains("g") || !json["g"].isNumber()) return false;
+        if (!json.contains("b") || !json["b"].isNumber()) return false;
+        if (!json.contains("zero") || !json["zero"].isString()) return false;
+        if (!json.contains("hdrd") || !json["hdrd"].isString()) return false;
+
         return true;
     }
 };
 
-class AdvancedMenu : public Popup<>, public ColorPickPopupDelegate {
+enum class Signal {
+    Mode, Follower, Color, Zero, Hdrd
+};
+
+template<typename T>
+class SignalEvent : public Event {
+public:
+    Signal signal;
+    T value;
+    SignalEvent(Signal signal, T value) : Event() {
+        this->signal = signal;
+        this->value = value;
+    }
+};
+
+class SetupCell : public CCMenu {
 protected:
-    int currentTab;
-    BarColor currentConfig;
+    virtual bool setup() = 0;
+    bool init() {
+        if (!CCMenu::init())
+            return false;
+            this->setPositionX(10.f);
+            this->setAnchorPoint(CCPoint(0.5, 0.f));
+        return this->setup();
+    }
+public:
+    virtual void setVal(BarColor const& setup) = 0;
+};
+
+class ModeCell : public SetupCell {
+protected:
+    // label
+    CCLabelBMFont* m_label;
+    // toggler
+    CCMenuItemToggler* m_toggler;
+    // init
     bool setup() override;
+    // on toggle
+    void onToggle(CCObject* sender) {
+        SignalEvent(Signal::Mode, this->getTag()).post();
+    }
+    void setTitle(const char* name) {
+        this->m_label->setString(name);
+    }
+public:
+    // toggle
+    void toggle() {
+        if (m_toggler->isToggled())
+            m_label->runAction(CCTintTo::create(0.2, 127, 127, 127));
+        else
+            m_label->runAction(CCTintTo::create(0.2, 0, 255, 0));
+        this->m_toggler->toggle(false);      
+    }
+    void setVal(BarColor const& setup) override {
+        bool on = setup.mode == this->getTag();
+        if (on == m_toggler->isToggled())
+            return;
+        this->m_toggler->toggle(on);
+        if (on)
+            m_label->setColor(ccc3(0, 255, 0));
+        else
+            m_label->setColor(ccc3(127, 127, 127));
+    }
+    static ModeCell* create(const char* name) {
+        auto node = new ModeCell();
+        if (node && node->init()) {
+            node->setTitle(name);
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
+class FollowerCell : public SetupCell {
+protected:
+    // current follower index
+    int index;
+    // label
+    CCLabelBMFont* m_label;
+    // init
+    bool setup() override;
+    // on toggle
+    void onArrow(CCObject* sender) {
+        this->index = (index + (sender->getTag() == 2 ? 7 : 5)) % 6;
+        m_label->setString(followeds[this->index]);
+        SignalEvent(Signal::Follower, this->index).post();
+    }
+public:
+    // set current index
+    void setVal(BarColor const& setup) override {
+        this->index = setup.follower;
+        m_label->setString(followeds[this->index]);
+    }
+    static FollowerCell* create() {
+        auto node = new FollowerCell();
+        if (node && node->init()) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
+class ColorCell : public SetupCell, public ColorPickPopupDelegate {
+protected:
+    // node
+    CCMenuItemSpriteExtra* m_btn;
+    // init
+    bool setup() override;
+    // on button
+    void onButton(CCObject* sender) {
+        auto popup = ColorPickPopup::create(m_btn->getColor());
+        popup->setDelegate(this);
+        popup->show();
+    }
+    // set current index
+    void updateColor(ccColor4B const& color) override {
+        this->m_btn->setColor(to3B(color));
+        SignalEvent(Signal::Color, to3B(color)).post();
+    }
+public:
+    void setVal(BarColor const& setup) override {
+        m_btn->setColor(setup.color);
+    }
+    static ColorCell* create() {
+        auto node = new ColorCell();
+        if (node && node->init()) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
+class MultiColorCell : public SetupCell, public ColorPickPopupDelegate {
+protected:
+    // which
+    bool hd;
+    // node
+    CCMenuItemSpriteExtra* m_btnZero;
+    CCMenuItemSpriteExtra* m_btnHdrd;
+    // init
+    bool setup() override;
+    // on button
+    void onButton(CCObject* sender) {
+        auto popup = ColorPickPopup::create((sender->getTag() == 2 ? m_btnHdrd : m_btnZero)->getColor());
+        popup->setDelegate(this);
+        popup->show();
+    }
+    // set current index
+    void updateColor(ccColor4B const& color) override {
+        (this->hd ? m_btnHdrd : m_btnZero)->setColor(to3B(color));
+        SignalEvent(this->hd ? Signal::Hdrd : Signal::Zero, to3B(color)).post();
+    }
+public:
+    void setVal(BarColor const& setup) override {
+        m_btnZero->setColor(setup.colorZero);
+        m_btnHdrd->setColor(setup.colorHdrd);
+    }
+    static MultiColorCell* create() {
+        auto node = new MultiColorCell();
+        if (node && node->init()) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
+/*
+class ToggleCell : public SetupCell {
+protected:
+    // toggler
+    CCMenuItemToggler* m_toggler;
+    // init
+    bool setup();
+    // on toggle
+    void onToggle(CCObject* sender) {
+        SignalEvent(Signal::Instant, !m_toggler->isToggled()).post();
+    }
+public:
+    // toggle
+    void setVal(BarColor const& setup) {
+        this->m_toggler->toggle(setup.instant);
+    }
+    static ToggleCell* create() {
+        auto node = new ToggleCell();
+        if (node && node->init()) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+*/
+
+// menu for advanced settings
+class AdvancedMenu : public Popup<> {
+protected:
+    // save the current selected tab in the left
+    int m_tab;
+    // current config setup
+    BarColor m_currentConfig;
+    // items menu
+    CCMenu* m_menuItems;
+    // setup menu
+    CCMenu* m_menuSetup;
+
+    EventListener<EventFilter<SignalEvent<int>>> listenerInt
+        = EventListener<EventFilter<SignalEvent<int>>>(
+            [this] (SignalEvent<int>* event) -> ListenerResult {
+                if (event->signal == Signal::Mode)
+                    this->switchMode(event->value);
+                else if (event->signal == Signal::Follower)
+                    this->m_currentConfig.follower = event->value;
+                return ListenerResult::Stop;
+            });
+
+    EventListener<EventFilter<SignalEvent<ccColor3B>>> listenerColor
+        = EventListener<EventFilter<SignalEvent<ccColor3B>>>(
+            [this] (SignalEvent<ccColor3B>* event) -> ListenerResult {
+                if (event->signal == Signal::Color)
+                    this->m_currentConfig.color = event->value;
+                if (event->signal == Signal::Zero)
+                    this->m_currentConfig.colorZero = event->value;
+                if (event->signal == Signal::Hdrd)
+                    this->m_currentConfig.colorHdrd = event->value;
+                return ListenerResult::Stop;
+            });
+
+    // rewrite setup ui
+    bool setup() override;
+    // initialize menu status in the right
     void initialize();
+    // run animation switch mode
+    void switchMode(int mode);
+    // on switch to another tab
     void onSwitchTab(CCObject*);
-    void onSetMode(CCObject*);
-    void onSetFollower(CCObject*);
-    void onPickColor(CCObject*);
-    void updateColor(ccColor4B const& color) override;
+    // close rewrite
     void onClose(CCObject*) override;
 public:
+    // create
     static AdvancedMenu* create() {
         auto ret = new AdvancedMenu();
         if (ret && ret->initAnchored(420.f, 280.f)) {
@@ -75,6 +349,7 @@ public:
     }
 };
 
+// the advanced setting node
 class AdvancedSetting : public SettingBaseValueV3<BarColor> {
 public:
     static Result<std::shared_ptr<SettingV3>> parse(std::string const& key, std::string const& modID, matjson::Value const& json) {
@@ -86,16 +361,17 @@ public:
         root.checkUnknownKeys();
         return root.ok(std::static_pointer_cast<SettingV3>(res));
     }
-    bool load(matjson::Value const& json) override {
+    bool load(matjson::Value const&) override {
         return true;
     }
-    bool save(matjson::Value& json) const override {
+    bool save(matjson::Value &) const override {
         return true;
     }
     bool isDefaultValue() const override {
         return true;
     }
     void reset() override {};
+
     SettingNodeV3* createNode(float width) override;
 };
 
