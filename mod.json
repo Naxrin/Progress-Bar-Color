@@ -5,7 +5,7 @@
 		"android":"2.2074",
 		"mac":"2.2074"
 	},
-	"version": "v3.3.1",
+	"version": "v3.3.2",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
@@ -79,12 +79,6 @@
             "description": "Pick the color manually as the 2nd color of your <cg>Practice Progress Bar</c> when you pick <cy>Progress</c> mode",
             "type": "rgb",
 			"default": "FFFFFF"
-        },
-		"practice-default-instant": {
-            "name": "New Best Mode",
-            "description": "Instead of gradient logic: for Pause menu, paint another color if you are hitting new best and manual color else wise; for other cases, always paint manual colors",
-            "type": "bool",
-			"default": false
         },
 		"quest-bars": {
             "name": "Quest Progress Bars",

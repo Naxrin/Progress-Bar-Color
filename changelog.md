@@ -1,6 +1,10 @@
+# 3.3.2
+Fix LevelSelectLayer issue  
+  
 # 3.3.1
 Fix a severely stupid bug  
-
+But actually it's still broken  
+  
 # 3.3.0
 Progress related mode (Chroma Icons side note)  
 Random mode (experimental)  

@@ -16,17 +16,15 @@ inline ccColor3B getGradient(float p, ccColor3B const &c1, ccColor3B const &c2) 
 }
 
 // paint a target node (progress bar) regarding its keyname
-// @param page pause-menu/info-menu/official-levels/quest
-// @param place normal/practice/top/middle/bottom
+// @param advKey key for advanced
+// @param defKey key for default
 // @param progress current percentage of this progress bar
 // @param inCommon avoid infinite stack
-void paint(CCSprite* target, std::string page, std::string place, int progress, bool inCommon = false) {
+void paint(CCSprite* target, std::string advKey, std::string defKey, int progress, bool inCommon = false) {
 	auto gm = GameManager::sharedState();
 	// maginot line
 	if (!target)
 		return;
-	// key
-	std::string index = fmt::format("{}-{}", page, place);
 	// reference
 	BarColor config = BarColor();
 
@@ -37,25 +35,25 @@ void paint(CCSprite* target, std::string page, std::string place, int progress, 
 
 	if (inCommon) {
 		for (auto mode : modes) {
-			if (mode == Mod::get()->getSettingValue<std::string>(page + "-default-mode"))
+			if (mode == Mod::get()->getSettingValue<std::string>(defKey + "-default-mode"))
 				break;
 			config.mode++;
 		}
 		for (auto followed : followeds) {
-			if (followed == Mod::get()->getSettingValue<std::string>(page + "-default-follower"))
+			if (followed == Mod::get()->getSettingValue<std::string>(defKey + "-default-follower"))
 				break;
 			config.follower++;
 		}
-		config.color = config.colorZero = Mod::get()->getSettingValue<ccColor3B>(page + "-default-color");
-		config.colorHdrd = Mod::get()->getSettingValue<ccColor3B>(page + "-default-another");
+		config.color = config.colorZero = Mod::get()->getSettingValue<ccColor3B>(defKey + "-default-color");
+		config.colorHdrd = Mod::get()->getSettingValue<ccColor3B>(defKey + "-default-another");
 	} else
-		config = Mod::get()->getSavedValue<BarColor>(index, place == "default" ? def2 : def1);
+		config = Mod::get()->getSavedValue<BarColor>(advKey, advKey.find("practice") ? def2 : def1);
 
 	switch(config.mode) {
 	// common
 	case 0:
 		if (!inCommon)
-			paint(target, page, place, progress);
+			paint(target, advKey, defKey, progress, true);
 		return;
 	// follow
 	case 1:
@@ -122,8 +120,8 @@ class $modify(PauseLayer) {
 		auto practice_bar = this->getChildByID("practice-progress-bar")->getChildByType<CCSprite>(0);
 
 		// paint
-		paint(normal_bar, "pause-menu", "normal", progress);
-		paint(practice_bar, "pause-menu", "practice", progress);
+		paint(normal_bar, "pause-menu-normal", "normal", progress);
+		paint(practice_bar, "pause-menu-practice", "practice", progress);
 	}
 };
 
@@ -140,28 +138,60 @@ class $modify(LevelInfoLayer) {
 		auto normal_bar = this->getChildByID("normal-mode-bar")->getChildByType<CCSprite>(0);
 		auto practice_bar = this->getChildByID("practice-mode-bar")->getChildByType<CCSprite>(0);
 		// paint
-		paint(normal_bar, "info-menu", "normal", level->m_normalPercent.value());
-		paint(practice_bar, "info-menu", "practice", level->m_practicePercent);
+		paint(normal_bar, "info-menu-normal", "normal", level->m_normalPercent.value());
+		paint(practice_bar, "info-menu-practice", "practice", level->m_practicePercent);
 		
 		return true;
 	}
 };
 
-#include <Geode/modify/LevelPage.hpp>
-class $modify(LevelPage) {
-	bool init(GJGameLevel* level) {
-		if (!LevelPage::init(level))
+#include <Geode/modify/LevelSelectLayer.hpp>
+class $modify(LevelSelectLayer) {
+	struct Fields {
+		int m_scrolls;
+	};
+	bool init(int p) {
+		if (!LevelSelectLayer::init(p))
 			return false;
 
-		// paint
-		if (m_normalProgressBar)
-			paint(m_normalProgressBar, "official-levels", "normal", level->m_normalPercent.value());
-		if (m_practiceProgressBar)
-			paint(m_practiceProgressBar, "official-levels", "practice", level->m_practicePercent);
-		
+		this->paintProgressBar(
+			static_cast<LevelPage*>(this->m_scrollLayer->getChildByID("level-pages")
+				->getChildByID("level-page-1")), 0);
+		this->paintProgressBar(
+			static_cast<LevelPage*>(this->m_scrollLayer->getChildByID("level-pages")
+				->getChildByID("level-page-2")), 1);
 		return true;
 	}
 
+	void scrollLayerMoved(CCPoint pos) override {
+		LevelSelectLayer::scrollLayerMoved(pos);
+		// not changing
+		if (m_scrolls == m_fields->m_scrolls)
+			return;
+
+		const int forward = (2 * m_scrolls - m_fields->m_scrolls + 24) % 24;
+		// what the fuck is this
+		this->paintProgressBar(
+			static_cast<LevelPage*>(this->m_scrollLayer->getChildByID("level-pages")
+				->getChildByID(fmt::format("level-page-{}", forward % 3 + 1))),
+			forward
+		);
+		m_fields->m_scrolls = m_scrolls;
+	}
+
+	void paintProgressBar(LevelPage* lvlpage, int i) {
+		if (i > 21)
+			return;
+
+		auto level = GameLevelManager::get()->getMainLevel(i + 1, true);
+		// paint
+		if (lvlpage->m_normalProgressBar)
+			//m_normalProgressBar->setID(level->m_levelName);
+			paint(lvlpage->m_normalProgressBar, "official-levels-normal", "normal", level->m_normalPercent.value());
+		if (lvlpage->m_practiceProgressBar)
+			//m_practiceProgressBar->setID(level->m_levelName);
+			paint(lvlpage->m_practiceProgressBar, "official-levels-practice", "practice", level->m_practicePercent);		
+	}
 };
 
 #include <Geode/modify/ChallengeNode.hpp>
@@ -171,8 +201,10 @@ class $modify(ChallengeNode){
 		if (!ChallengeNode::init(item, page, isNew))
 			return false;
 		if (auto bar = this->getChildByID("progress-bar")){
-			const char* grades[4] = {"default", "top", "middle", "bottom"};
-			paint(bar->getChildByType<CCSprite>(0), "quest", grades[item->m_position], (100.f * item->m_count.value() / item->m_goal.value()));
+			std::string grades[4] = {"default", "top", "middle", "bottom"};
+			paint(
+				bar->getChildByType<CCSprite>(0),
+				"quest-" + grades[item->m_position], "quest", (100.f * item->m_count.value() / item->m_goal.value()));
 		}
 		return true;
 	}
