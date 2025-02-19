@@ -1,3 +1,7 @@
+# 3.3.3
+Fix LevelSelectLayer issue (again)  
+now it won't crash
+
 # 3.3.2
 Fix LevelSelectLayer issue  
   

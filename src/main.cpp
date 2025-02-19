@@ -149,24 +149,35 @@ class $modify(LevelInfoLayer) {
 class $modify(LevelSelectLayer) {
 	struct Fields {
 		int m_scrolls;
+		bool in_init = true;
 	};
 	bool init(int p) {
 		if (!LevelSelectLayer::init(p))
 			return false;
 
+		
 		this->paintProgressBar(
 			static_cast<LevelPage*>(this->m_scrollLayer->getChildByID("level-pages")
-				->getChildByID("level-page-1")), 0);
+				->getChildByID(fmt::format("level-page-{}", (p + 2) % 3 + 1))), p == 0 ? 23 : p - 1);
+
 		this->paintProgressBar(
 			static_cast<LevelPage*>(this->m_scrollLayer->getChildByID("level-pages")
-				->getChildByID("level-page-2")), 1);
+				->getChildByID(fmt::format("level-page-{}", p % 3 + 1))), p);
+
+		this->paintProgressBar(
+			static_cast<LevelPage*>(this->m_scrollLayer->getChildByID("level-pages")
+				->getChildByID(fmt::format("level-page-{}", (p + 1) % 3 + 1))), p == 23 ? 0 : p + 1);
+
+		//log::debug("{} -> {} | {} -> {} | {} -> {}",
+			//(p + 2) % 3 + 1, p == 0 ? 23 : p - 1, p % 3 + 1, p, (p + 1) % 3 + 1, p == 23 ? 0 : p + 1);
+		m_fields->in_init = false;
 		return true;
 	}
 
 	void scrollLayerMoved(CCPoint pos) override {
 		LevelSelectLayer::scrollLayerMoved(pos);
 		// not changing
-		if (m_scrolls == m_fields->m_scrolls)
+		if (m_fields->in_init || m_scrolls == m_fields->m_scrolls)
 			return;
 
 		const int forward = (2 * m_scrolls - m_fields->m_scrolls + 24) % 24;
