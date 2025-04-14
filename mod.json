@@ -135,13 +135,13 @@
             "name": "Manual Color",
             "description": "Pick the color manually for your <cg>Unclaimed List Progress Bar</c>",
             "type": "rgb",
-			"default": "00FF00"
+			"default": "FF5432"
         },
 		"list-todo-default-another": {
             "name": "Another Color",
             "description": "Pick the color manually as the 2nd color of your <cg>Unclaimed List Progress Bar</c> when you pick <cy>Progress</c> mode",
             "type": "rgb",
-			"default": "FFFFFF"
+			"default": "FF5432"
         },
 		"list-done-bars": {
             "name": "Claimed List Progress Bars",
@@ -166,13 +166,13 @@
             "name": "Manual Color",
             "description": "Pick the color manually for your <cg>Claimed List Progress Bar</c>",
             "type": "rgb",
-			"default": "00FF00"
+			"default": "50BEFF"
         },
 		"list-done-default-another": {
             "name": "Another Color",
             "description": "Pick the color manually as the 2nd color of your <cg>Claimed List Progress Bar</c> when you pick <cy>Progress</c> mode",
             "type": "rgb",
-			"default": "FFFFFF"
+			"default": "50BEFF"
         },
 		"advanced-options": {
 			"name": "Other Options",

@@ -105,8 +105,9 @@ void paint(CCSprite* target, std::string advKey, std::string defKey, int progres
 #include <Geode/modify/PauseLayer.hpp>
 class $modify(PauseLayer) {
 
-	void customSetup() {
-		PauseLayer::customSetup();
+	bool init(bool p) {
+		if (!PauseLayer::init(p))
+			return false;
 
 		auto level = PlayLayer::get()->m_level;
 		bool plat = level->isPlatformer();
@@ -116,8 +117,9 @@ class $modify(PauseLayer) {
 		
 		auto bp = Loader::get()->getLoadedMod("tpdea.betterpause-better");
 		if (bp && bp->getSettingValue<int64_t>("type-pause") == 1) {
+			log::warn("betterpause loaded");
 			if (auto node = this->getChildByID("better-pause-node")) {
-				
+				log::warn("bp node found");
 				auto nb = node->getChildByID("normal-bar");
 				paint(nb->getChildByType<CCSprite>(1), "pause-menu-normal", "normal", progress);
 				paint(nb->getChildByType<CCSprite>(2), "pause-menu-normal", "normal", progress);
@@ -136,6 +138,8 @@ class $modify(PauseLayer) {
 			paint(normal_bar, "pause-menu-normal", "normal", progress);
 			paint(practice_bar, "pause-menu-practice", "practice", progress);			
 		}
+		
+		return true;
 	}
 };
 

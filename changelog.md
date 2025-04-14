@@ -1,7 +1,7 @@
 # 3.4.0
 iOS support (Experimental)  
 Add option for list page / cell progress bars  
-Compatible with betterpause (if you have hiimjustin's unofficial fork loaded)
+Compatible with betterpause (if you have hiimjasmine's unofficial fork loaded)
 ~~When Map Packs~~ Never.
 
 # 3.3.3
