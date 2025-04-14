@@ -113,7 +113,7 @@ class $modify(PauseLayer) {
 		bool plat = level->isPlatformer();
 		int progress = level->m_normalPercent.value();
 		if (plat)
-			return;
+			return true;
 		
 		auto bp = Loader::get()->getLoadedMod("tpdea.betterpause-better");
 		if (bp && bp->getSettingValue<int64_t>("type-pause") == 1) {
