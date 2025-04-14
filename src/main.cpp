@@ -116,9 +116,8 @@ class $modify(PauseLayer) {
 		
 		auto bp = Loader::get()->getLoadedMod("tpdea.betterpause-better");
 		if (bp && bp->getSettingValue<int64_t>("type-pause") == 1) {
-			log::warn("betterpause loaded");
 			if (auto node = this->getChildByID("better-pause-node")) {
-				log::warn("bp node found");
+				
 				auto nb = node->getChildByID("normal-bar");
 				paint(nb->getChildByType<CCSprite>(1), "pause-menu-normal", "normal", progress);
 				paint(nb->getChildByType<CCSprite>(2), "pause-menu-normal", "normal", progress);
