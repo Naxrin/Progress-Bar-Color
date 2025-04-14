@@ -1,11 +1,12 @@
 {
-	"geode": "4.0.1",
+	"geode": "4.3.1",
 	"gd":{
-		"win":"2.2074",
-		"android":"2.2074",
-		"mac":"2.2074"
+		"win": "2.2074",
+		"android": "2.2074",
+		"mac": "2.2074",
+		"ios": "2.2074"
 	},
-	"version": "v3.3.3",
+	"version": "v3.4.0",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
@@ -14,7 +15,7 @@
 	"dependencies": [
 		{
 			"id": "geode.node-ids",
-			"version": "v1.17.0",
+			"version": "v1.20.1",
 			"importance": "required"
 		}],
 	"settings":{
@@ -111,13 +112,75 @@
             "type": "rgb",
 			"default": "FFFFFF"
         },
+		"list-todo-bars": {
+            "name": "Unclaimed List Progress Bars",
+            "description": "Modify Unclaimed List Progress Bar Colors here in case you wanna set those in list cell and in list level pages meanwhile.",
+            "type": "title"
+        },
+		"list-todo-default-mode": {
+            "name": "Mode",
+            "description": "Pick the way you hope to set your <cg>Unclaimed List Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually\nProgress: Tint Regarding the progress of this progress bar\nRandom: Experimental Option",
+            "type": "string",
+			"one-of": ["Original", "Follow", "Manual", "Progress", "Random"],
+			"default": "Original"
+        },
+		"list-todo-default-follower": {
+            "name": "Follower",
+            "description": "Pick the color channel you hope your <cg>Unclaimed List Progress Bar</c> color follow",
+            "type": "string",
+			"one-of": ["Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"],
+			"default": "Main"
+        },
+		"list-todo-default-color": {
+            "name": "Manual Color",
+            "description": "Pick the color manually for your <cg>Unclaimed List Progress Bar</c>",
+            "type": "rgb",
+			"default": "00FF00"
+        },
+		"list-todo-default-another": {
+            "name": "Another Color",
+            "description": "Pick the color manually as the 2nd color of your <cg>Unclaimed List Progress Bar</c> when you pick <cy>Progress</c> mode",
+            "type": "rgb",
+			"default": "FFFFFF"
+        },
+		"list-done-bars": {
+            "name": "Claimed List Progress Bars",
+            "description": "Modify Claimed List Progress Bar Colors here in case you wanna set those in list cell and in list level pages meanwhile.",
+            "type": "title"
+        },
+		"list-done-default-mode": {
+            "name": "Mode",
+            "description": "Pick the way you hope to set your <cg>Claimed List Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually\nProgress: Tint Regarding the progress of this progress bar\nRandom: Experimental Option",
+            "type": "string",
+			"one-of": ["Original", "Follow", "Manual", "Progress", "Random"],
+			"default": "Original"
+        },
+		"list-done-default-follower": {
+            "name": "Follower",
+            "description": "Pick the color channel you hope your <cg>Claimed List Progress Bar</c> color follow",
+            "type": "string",
+			"one-of": ["Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"],
+			"default": "Main"
+        },
+		"list-done-default-color": {
+            "name": "Manual Color",
+            "description": "Pick the color manually for your <cg>Claimed List Progress Bar</c>",
+            "type": "rgb",
+			"default": "00FF00"
+        },
+		"list-done-default-another": {
+            "name": "Another Color",
+            "description": "Pick the color manually as the 2nd color of your <cg>Claimed List Progress Bar</c> when you pick <cy>Progress</c> mode",
+            "type": "rgb",
+			"default": "FFFFFF"
+        },
 		"advanced-options": {
-			"name": "Advanced Options",
+			"name": "Other Options",
 			"description": "For deep user-defiend players.",
 			"type": "title"
 		},
 		"advanced-menu": {
-			"name": "Seperately Config",
+			"name": "Advanced Options",
 			"description": "In case you hope to <cy>seperately</c> set level progress bars in different layer menus or quest bars of different grades.",
 			"type":"custom:advanced-option"
 		}

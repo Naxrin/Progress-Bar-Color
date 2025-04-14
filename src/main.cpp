@@ -1,8 +1,6 @@
-#include <Geode/Geode.hpp>
 #include <Geode/binding/GameManager.hpp>
-
 #include <random>
-
+#include <regex>
 #include "head.hpp"
 
 using namespace geode::prelude;
@@ -47,13 +45,14 @@ void paint(CCSprite* target, std::string advKey, std::string defKey, int progres
 		config.color = config.colorZero = Mod::get()->getSettingValue<ccColor3B>(defKey + "-default-color");
 		config.colorHdrd = Mod::get()->getSettingValue<ccColor3B>(defKey + "-default-another");
 	} else
-		config = Mod::get()->getSavedValue<BarColor>(advKey, advKey.find("practice") ? def2 : def1);
+		config = Mod::get()->getSavedValue<BarColor>(advKey, makeDefStruct(
+			advKey.find("list") ? (advKey.find("done") ? defCol4 : defCol3) : (advKey.find("practice") ? defCol2 : defCol1)));
 
 	switch(config.mode) {
 	// common
 	case 0:
 		if (!inCommon)
-			paint(target, advKey, defKey, progress, true);
+			paint(target, defKey, defKey, progress, true);
 		return;
 	// follow
 	case 1:
@@ -155,6 +154,8 @@ class $modify(LevelSelectLayer) {
 		if (!LevelSelectLayer::init(p))
 			return false;
 
+		if (!this->m_scrollLayer->getChildByID("level-pages"))
+			return true;
 		
 		this->paintProgressBar(
 			static_cast<LevelPage*>(this->m_scrollLayer->getChildByID("level-pages")
@@ -191,7 +192,7 @@ class $modify(LevelSelectLayer) {
 	}
 
 	void paintProgressBar(LevelPage* lvlpage, int i) {
-		if (i > 21)
+		if (i > 21 || !lvlpage)
 			return;
 
 		auto level = GameLevelManager::get()->getMainLevel(i + 1, true);
@@ -211,7 +212,7 @@ class $modify(ChallengeNode){
 
 		if (!ChallengeNode::init(item, page, isNew))
 			return false;
-		if (auto bar = this->getChildByID("progress-bar")){
+		if (auto bar = this->getChildByID("progress-bar")) {
 			std::string grades[4] = {"default", "top", "middle", "bottom"};
 			paint(
 				bar->getChildByType<CCSprite>(0),
@@ -221,9 +222,93 @@ class $modify(ChallengeNode){
 	}
 };
 
+#include <Geode/modify/LevelListLayer.hpp>
+class $modify(LevelListLayer){
+	bool init(GJLevelList *p){
+
+		if (!LevelListLayer::init(p))
+			return false;
+		bool isClaimed = !(this->getChildByID("small-diamonds-icon"));			
+		/*
+		int count = 0;
+		for (auto [key, val] : CCDictionaryExt<int, GJGameLevel*>(p->m_levelsDict))
+			if (val->m_normalPercent.value() == 100)
+				count++;
+		log::error("{} count = {}", p->m_listName, count);
+		
+		if (auto bar = this->getChildByID("progress-bar"))
+			paint(
+				bar->getChildByType<CCSprite>(0),
+				fmt::format("list-page-{}", isClaimed ? "done" : "todo"), "list-page",
+					100 * (isClaimed ? (count / p->m_levels.size()) : (count > p->m_levelsToClaim ? 1 : count / p->m_levelsToClaim))
+			);*/
+
+		std::string str = static_cast<CCLabelBMFont*>(this->getChildByID("progress-bar-label"))->getString();
+		std::regex pt(R"w((\d+)/(\d+))w");
+		std::smatch match;
+		if (std::regex_search(str, match, pt)) {
+			auto progress = 100 * stoi(match.str(1)) / stoi(match.str(2));
+			if (progress > 100)
+				progress = 100;
+			if (auto bar = this->getChildByID("progress-bar"))
+				paint(
+					bar->getChildByType<CCSprite>(0),
+					fmt::format("list-page-{}", isClaimed ? "done" : "todo"),
+					fmt::format("list-{}", isClaimed ? "done" : "todo"),
+					progress
+				);
+		} else
+		log::warn("Unable to recolor list progress bar: Regex match failed");
+
+		return true;
+	}
+
+	/*
+	void onClaimReward(CCObject* sender) {
+		LevelListLayer::onClaimReward(sender);
+	}*/
+};
+
+#include <Geode/modify/LevelListCell.hpp>
+class $modify(LevelListCell) {
+	void loadFromList(GJLevelList *p){
+
+		LevelListCell::loadFromList(p);
+		bool isClaimed = !(m_mainLayer->getChildByID("completion-diamond"));
+		/*
+		int count = 0;
+		for (auto [key, val] : CCDictionaryExt<int, GJGameLevel*>(p->m_levelsDict))
+			if (val->m_normalPercent.value() == 100)
+				count++;
+		log::error("{} count = {}", p->m_listName, count);
+		
+		if (auto bar = this->getChildByID("progress-bar"))
+			paint(
+				bar->getChildByType<CCSprite>(0),
+				fmt::format("list-cell-{}", isClaimed ? "done" : "todo"), "list-cell",
+					100 * (isClaimed ? (count / p->m_levels.size()) : (count > p->m_levelsToClaim ? 1 : count / p->m_levelsToClaim))
+			);*/
+
+		std::string str = static_cast<CCLabelBMFont*>(m_mainLayer->getChildByID("progress-label"))->getString();
+		std::regex pt(R"w((\d+)/(\d+))w");
+		std::smatch match;
+		if (std::regex_search(str, match, pt)) {
+			auto progress = 100 * stoi(match.str(1)) / stoi(match.str(2));
+			if (progress > 100)
+				progress = 100;
+			if (auto bar = m_mainLayer->getChildByID("progress-bar"))
+				paint(
+					bar->getChildByType<CCSprite>(0),
+					fmt::format("list-cell-{}", isClaimed ? "done" : "todo"),
+					fmt::format("list-{}", isClaimed ? "done" : "todo"),
+					progress
+				);
+		} else
+			log::warn("Unable to recolor list progress bar: Regex match failed");
+	}
+};
 
 // Register setting
-
 $execute {
     (void)Mod::get()->registerCustomSettingType("advanced-option", &AdvancedSetting::parse);
 }

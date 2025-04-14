@@ -159,8 +159,8 @@ bool AdvancedMenu::setup() {
     this->m_tab = Mod::get()->getSavedValue<int64_t>("current-tab", 0);
     // load current config
     this->m_currentConfig = Mod::get()->getSavedValue<BarColor>(
-        tabs[m_tab],
-        tabs[m_tab].find("practice") ? def2 : def1
+        tabs[m_tab], makeDefStruct(
+            tabs[m_tab].find("list") ? (tabs[m_tab].find("done") ? defCol4 : defCol3) : (tabs[m_tab].find("practice") ? defCol2 : defCol1))
     );
 
     // division line
@@ -169,33 +169,53 @@ bool AdvancedMenu::setup() {
     lrcDivLine->setContentSize(CCSize(2.f, 230.f));
     m_mainLayer->addChild(lrcDivLine);
 
+    // scroller
+    auto scrollerItems = ScrollLayer::create(CCSize(100.f, 240.f));
+    scrollerItems->setPosition(CCPoint(15.f, 10.f));
+    scrollerItems->setID("items-scroller");
+    m_mainLayer->addChild(scrollerItems);
+
     // item switch menu
     this->m_menuItems = CCMenu::create();
-    m_menuItems->setPosition(CCPoint(15.f, 10.f));
-    m_menuItems->setContentSize(CCSize(100.f, 240.f));
+    m_menuItems->setPosition(CCPoint(0.f, 0.f));
     m_menuItems->setID("items-menu");
-    m_mainLayer->addChild(m_menuItems);
+    scrollerItems->m_contentLayer->addChild(m_menuItems);
 
-    // Item Switch Menu GoldFont
-    for (int i=0; i<4; i++) {
-        auto title = CCLabelBMFont::create(titles[i].c_str(), "goldFont.fnt", 140.f);
-        title->setPosition(CCPoint(50.f, 230.f-i*54.f));
-        title->setScale(0.6);
-        m_menuItems->addChild(title);
+    int i = 6, j = 13;
+    float h = 17.f;
+
+    for (bool type : types) {
+        // gold font title
+        if (type) {
+            i--;
+
+            auto title = CCLabelBMFont::create(titles[i].c_str(), "goldFont.fnt", 140.f);
+            title->setPosition(CCPoint(50.f, h));
+            title->setScale(0.6);
+
+            m_menuItems->addChild(title);
+            h += 20.f;
+        }
+        // big font option tab
+        else {
+            j--;
+
+            auto label = CCLabelBMFont::create(items[ops[j]].c_str(), "bigFont.fnt", 140.f);
+            label->setScale(0.5);
+            label->setTag(j);
+            
+            auto button = CCMenuItemSpriteExtra::create(label, this, menu_selector(AdvancedMenu::onSwitchTab));
+            button->setPosition(CCPoint(50.f, h));
+            button->setColor(j == m_tab ? ccc3(0, 255, 0) : ccc3(127, 127, 127));
+            button->setTag(j);
+
+            m_menuItems->addChild(button);
+            h += 17.f;
+        }
     }
 
-    // Tab Switch Button BigFont
-    for (int i=0; i<9; i++) {
-        auto label = CCLabelBMFont::create(items[i<6 ? i%2 : i-4].c_str(), "bigFont.fnt", 140.f);
-        label->setScale(0.5);
-        
-        auto button = CCMenuItemSpriteExtra::create(label, this, menu_selector(AdvancedMenu::onSwitchTab));
-        button->setPosition(CCPoint(50.f, i<6 ? 213.f-(i/2)*54.f-(i%2)*17.f : 153-i*17.f));
-        button->setColor(i == m_tab ? ccc3(0, 255, 0) : ccc3(127, 127, 127));
-        label->setTag(i);
-        button->setTag(i);
-        m_menuItems->addChild(button);
-    }
+    scrollerItems->m_contentLayer->setContentSize(CCSize(100.f, h - 3.f));
+    m_menuItems->setContentSize(CCSize(100.f, h - 3.f));
 
     // Setup Workspace
     this->m_menuSetup = CCMenu::create();
@@ -279,7 +299,7 @@ bool AdvancedMenu::setup() {
 void AdvancedMenu::initialize() {
     // title
     static_cast<CCLabelBMFont*>(m_mainLayer->getChildByID("setup-title"))
-        ->setCString((titles[m_tab<6 ? m_tab/2 : 3] + " - " + items[m_tab<6 ? m_tab%2 : m_tab-4]).c_str());
+        ->setCString((titles[ m_tab > 8 ? (4 + m_tab > 10) : (m_tab < 6 ? m_tab / 2 : 3)] + " - " + items[ops[m_tab]]).c_str());
 
     float Y = 180.f;
     float h;
@@ -352,8 +372,8 @@ void AdvancedMenu::onSwitchTab(CCObject* sender) {
     // switch to current config
     this->m_tab = tag;
     this->m_currentConfig = Mod::get()->getSavedValue<BarColor>(
-        tabs[m_tab],
-        tabs[m_tab].find("practice") ? def2 : def1
+        tabs[m_tab], makeDefStruct(
+            tabs[m_tab].find("list") ? (tabs[m_tab].find("done") ? defCol4 : defCol3) : (tabs[m_tab].find("practice") ? defCol2 : defCol1))
     );
     // green the new tab
     m_menuItems->getChildByTag(m_tab)->runAction(CCTintTo::create(0.3, 0, 255, 0));

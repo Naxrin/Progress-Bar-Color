@@ -6,15 +6,17 @@
 using namespace geode::prelude;
 
 static const char* followeds[6] = {"Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"};
-const std::string titles[4] = {"Level Info Menu", "Pause Menu", "Official Levels", "Quests Page"};
-const std::string items[5] = {"Normal", "Practice", "Top", "Middle", "Bottom"};
+const std::string titles[6] = {"Level Info Menu", "Pause Menu", "Official Levels", "Quests Page", "List Page", "List Cell"};
+const std::string items[7] = {"Normal", "Practice", "Top", "Middle", "Bottom", "Unclaimed", "Claimed"};
 const std::string modes[5] = {"Default", "Follow", "Manual", "Progress", "Random"};
 
-const std::string tabs[9] = {
+const std::string tabs[13] = {
     "info-menu-normal", "info-menu-practice",
     "pause-menu-normal", "pause-menu-practice", 
     "official-levels-normal", "official-levels-practice",
-    "quest-top", "quest-middle", "quest-bottom"
+    "quest-top", "quest-middle", "quest-bottom",
+    "list-page-todo", "list-page-done",
+    "list-cell-todo", "list-cell-done"
 };
 
 // struct setup for a color channel
@@ -24,28 +26,27 @@ struct BarColor {
     ccColor3B color;
     ccColor3B colorZero;
     ccColor3B colorHdrd;
-    bool operator == (const BarColor &c) const{
+    bool operator == (const BarColor &c) const {
 	    return ((mode == c.mode) && (follower == c.follower) && (color == c.color));
     };
 };
 
 // normal & quest
-const static BarColor def1 = BarColor{
-    .mode = 0,
-    .follower = 0,
-    .color=ccc3(0, 255, 0),
-    .colorZero=ccc3(0, 255, 0),
-    .colorHdrd=ccc3(0, 255, 0)
-};
-
+const ccColor3B defCol1 = ccc3(0, 255, 0);
 // practice
-const static BarColor def2 = BarColor{
-    .mode = 0,
-    .follower = 0,
-    .color=ccc3(255, 255, 0),
-    .colorZero=ccc3(255, 255, 0),
-    .colorHdrd=ccc3(255, 255, 0)
-};
+const ccColor3B defCol2 = ccc3(255, 255, 0);
+// unclaimed
+const ccColor3B defCol3 = ccc3(255, 84, 50);
+// claimed
+const ccColor3B defCol4 = ccc3(80, 190, 255);
+
+inline BarColor makeDefStruct(ccColor3B col) {
+    return BarColor{
+        .mode = 0, .follower = 0,
+        .color = col, .colorZero = col, .colorHdrd = col      
+    };
+
+}
 
 template<>
 struct matjson::Serialize<BarColor> {
@@ -239,7 +240,8 @@ protected:
     bool setup() override;
     // on button
     void onButton(CCObject* sender) {
-        auto popup = ColorPickPopup::create((sender->getTag() == 2 ? m_btnHdrd : m_btnZero)->getColor());
+        this->hd = sender->getTag() == 2;
+        auto popup = ColorPickPopup::create(( this->hd ? m_btnHdrd : m_btnZero)->getColor());
         popup->setDelegate(this);
         popup->show();
     }
@@ -294,7 +296,17 @@ public:
 
 // menu for advanced settings
 class AdvancedMenu : public Popup<> {
+private:
+    // left menu item item (from buttom to top)
+    const std::vector<bool> types = {
+        false, false, true, false, false, true, 
+        false, false, false, true,
+        false, false, true, false, false, true, false, false, true
+    };
+    // reversed 
+    const std::vector<short> ops = {0, 1, 0, 1, 0, 1, 2, 3, 4, 5, 6, 5, 6};
 protected:
+
     // save the current selected tab in the left
     int m_tab;
     // current config setup

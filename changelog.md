@@ -1,3 +1,8 @@
+# 3.4.0
+iOS support (Experimental)  
+Add option for list page / cell progress bars  
+~~When Map Packs~~ Never.
+
 # 3.3.3
 Fix LevelSelectLayer issue (again)  
 now it won't crash
