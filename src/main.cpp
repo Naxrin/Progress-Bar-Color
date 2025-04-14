@@ -113,14 +113,29 @@ class $modify(PauseLayer) {
 		int progress = level->m_normalPercent.value();
 		if (plat)
 			return;
+		
+		auto bp = Loader::get()->getLoadedMod("tpdea.betterpause-better");
+		if (bp && bp->getSettingValue<int64_t>("type-pause") == 1) {
+			if (auto node = this->getChildByID("better-pause-node")) {
+				
+				auto nb = node->getChildByID("normal-bar");
+				paint(nb->getChildByType<CCSprite>(1), "pause-menu-normal", "normal", progress);
+				paint(nb->getChildByType<CCSprite>(2), "pause-menu-normal", "normal", progress);
 
-		// nodes
-		auto normal_bar = this->getChildByID("normal-progress-bar")->getChildByType<CCSprite>(0);
-		auto practice_bar = this->getChildByID("practice-progress-bar")->getChildByType<CCSprite>(0);
+				auto pb = node->getChildByID("practice-bar");
+				paint(pb->getChildByType<CCSprite>(1), "pause-menu-practice", "practice", progress);
+				paint(pb->getChildByType<CCSprite>(2), "pause-menu-practice", "practice", progress);
+			}
+		}
+		else {
+			// nodes
+			auto normal_bar = this->getChildByID("normal-progress-bar")->getChildByType<CCSprite>(0);
+			auto practice_bar = this->getChildByID("practice-progress-bar")->getChildByType<CCSprite>(0);
 
-		// paint
-		paint(normal_bar, "pause-menu-normal", "normal", progress);
-		paint(practice_bar, "pause-menu-practice", "practice", progress);
+			// paint
+			paint(normal_bar, "pause-menu-normal", "normal", progress);
+			paint(practice_bar, "pause-menu-practice", "practice", progress);			
+		}
 	}
 };
 
@@ -258,7 +273,7 @@ class $modify(LevelListLayer){
 					progress
 				);
 		} else
-		log::warn("Unable to recolor list progress bar: Regex match failed");
+			log::warn("Unable to recolor list progress bar: Regex match failed");
 
 		return true;
 	}
