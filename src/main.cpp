@@ -105,7 +105,12 @@ void paint(CCSprite* target, std::string advKey, std::string defKey, int progres
 #include <Geode/modify/PauseLayer.hpp>
 class $modify(PauseLayer) {
 
-	void customSetup() {
+	static void onModify(auto& self) {
+        if (!self.setHookPriorityPost("PauseLayer::customSetup", Priority::Late))
+            log::warn("Failed to set hook priority.");
+    }
+
+	void customSetup() override {
 		PauseLayer::customSetup();
 
 		auto level = PlayLayer::get()->m_level;
@@ -116,8 +121,9 @@ class $modify(PauseLayer) {
 		
 		auto bp = Loader::get()->getLoadedMod("tpdea.betterpause-better");
 		if (bp && bp->getSettingValue<int64_t>("type-pause") == 1) {
+			log::warn("betterpause loaded");
 			if (auto node = this->getChildByID("better-pause-node")) {
-				
+				log::warn("bp node found");
 				auto nb = node->getChildByID("normal-bar");
 				paint(nb->getChildByType<CCSprite>(1), "pause-menu-normal", "normal", progress);
 				paint(nb->getChildByType<CCSprite>(2), "pause-menu-normal", "normal", progress);
@@ -308,7 +314,8 @@ class $modify(LevelListCell) {
 		std::regex pt(R"w((\d+)/(\d+))w");
 		std::smatch match;
 		if (std::regex_search(str, match, pt)) {
-			auto progress = 100 * stoi(match.str(1)) / stoi(match.str(2));
+			// avoid zero division (how)
+			auto progress = stoi(match.str(2)) ? 100 * stof(match.str(1)) / stoi(match.str(2)) : 0;
 			if (progress > 100)
 				progress = 100;
 			if (auto bar = m_mainLayer->getChildByID("progress-bar"))
