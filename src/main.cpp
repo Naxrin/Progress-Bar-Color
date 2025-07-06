@@ -268,7 +268,7 @@ class $modify(LevelListLayer){
 		std::regex pt(R"w((\d+)/(\d+))w");
 		std::smatch match;
 		if (std::regex_search(str, match, pt)) {
-			auto progress = 100 * stoi(match.str(1)) / stoi(match.str(2));
+			auto progress = stoi(match.str(2)) ? 100 * stoi(match.str(1)) / stoi(match.str(2)) : 0;
 			if (progress > 100)
 				progress = 100;
 			if (auto bar = this->getChildByID("progress-bar"))

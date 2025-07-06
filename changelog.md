@@ -1,3 +1,6 @@
+# 3.4.2
+- Another zero division fix
+
 # 3.4.1
 - Fix divided by Zero Error crash (why is there empty level lists?)
 - This mod should really work with betterpause now

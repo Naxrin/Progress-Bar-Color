@@ -10,14 +10,16 @@
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
-	"description": "Your progress bar color modifier",
-	"repository": "https://github.com/Naxrin/Progress-Bar-Color",
-	"dependencies": [
-		{
-			"id": "geode.node-ids",
+	"description": "Our progress bar color modifier",
+    "links": {
+	    "source": "https://github.com/Naxrin/Progress-Bar-Color"
+    },
+	"dependencies": {
+		"geode.node-ids": {
 			"version": "v1.20.1",
 			"importance": "required"
-		}],
+		}        
+    },
 	"settings":{
 		"normal-progress-bars": {
             "name": "Normal Progress Bars",
