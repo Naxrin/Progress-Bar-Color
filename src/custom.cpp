@@ -181,7 +181,7 @@ bool AdvancedMenu::setup() {
     m_menuItems->setID("items-menu");
     scrollerItems->m_contentLayer->addChild(m_menuItems);
 
-    int i = 6, j = 13;
+    int i = 6, j = 15;
     float h = 17.f;
 
     for (bool type : types) {
@@ -293,6 +293,7 @@ bool AdvancedMenu::setup() {
     m_mainLayer->getChildByType<CCMenu>(0)->addChild(btnApply);
 
     initialize();
+    scrollerItems->moveToTop();
     return true;
 }
 

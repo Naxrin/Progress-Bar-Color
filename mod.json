@@ -1,12 +1,12 @@
 {
-	"geode": "4.4.0",
+	"geode": "4.6.3",
 	"gd":{
 		"win": "2.2074",
 		"android": "2.2074",
 		"mac": "2.2074",
 		"ios": "2.2074"
 	},
-	"version": "v3.4.2",
+	"version": "v3.5.0",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
@@ -173,6 +173,37 @@
 		"list-done-default-another": {
             "name": "Another Color",
             "description": "Pick the color manually as the 2nd color of your <cg>Claimed List Progress Bar</c> when you pick <cy>Progress</c> mode",
+            "type": "rgb",
+			"default": "50BEFF"
+        },
+		"list-unf-bars": {
+            "name": "Unfeatured List Progress Bars",
+            "description": "Modify Unfeatured List Progress Bar Colors here in case you wanna set those in list cell and in list level pages meanwhile.",
+            "type": "title"
+        },
+		"list-unf-default-mode": {
+            "name": "Mode",
+            "description": "Pick the way you hope to set your <cg>Unfeatured List Progress Bar</c> color\nOriginal: Cyan\nFollow: Sync with player color channel\nManual: Set it manually\nProgress: Tint Regarding the progress of this progress bar\nRandom: Experimental Option",
+            "type": "string",
+			"one-of": ["Original", "Follow", "Manual", "Progress", "Random"],
+			"default": "Original"
+        },
+		"list-unf-default-follower": {
+            "name": "Follower",
+            "description": "Pick the color channel you hope your <cg>Unfeatured List Progress Bar</c> color follow",
+            "type": "string",
+			"one-of": ["Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"],
+			"default": "Main"
+        },
+		"list-unf-default-color": {
+            "name": "Manual Color",
+            "description": "Pick the color manually for your <cg>Unfeatured List Progress Bar</c>",
+            "type": "rgb",
+			"default": "50BEFF"
+        },
+		"list-unf-default-another": {
+            "name": "Another Color",
+            "description": "Pick the color manually as the 2nd color of your <cg>Unfeatured List Progress Bar</c> when you pick <cy>Progress</c> mode",
             "type": "rgb",
 			"default": "50BEFF"
         },

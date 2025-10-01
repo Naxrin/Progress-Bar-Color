@@ -249,45 +249,50 @@ class $modify(LevelListLayer){
 
 		if (!LevelListLayer::init(p))
 			return false;
-		bool isClaimed = !(this->getChildByID("small-diamonds-icon"));			
-		/*
-		int count = 0;
-		for (auto [key, val] : CCDictionaryExt<int, GJGameLevel*>(p->m_levelsDict))
-			if (val->m_normalPercent.value() == 100)
-				count++;
-		log::error("{} count = {}", p->m_listName, count);
-		
+		bool isClaimed = GameStatsManager::sharedState()->hasClaimedListReward(p);
+		auto goal = isClaimed || !p->m_featured ? p->m_levels.size() : p->m_levelsToClaim;
+		auto progress = goal ? 100.f * p->completedLevels() / goal : 0;
+		log::debug("debug claim = {} size = {} goal = {} completed = {}", isClaimed, p->m_levels.size(), p->m_levelsToClaim, p->completedLevels());
+		if (progress > 100)
+			progress = 100;
 		if (auto bar = this->getChildByID("progress-bar"))
 			paint(
 				bar->getChildByType<CCSprite>(0),
-				fmt::format("list-page-{}", isClaimed ? "done" : "todo"), "list-page",
-					100 * (isClaimed ? (count / p->m_levels.size()) : (count > p->m_levelsToClaim ? 1 : count / p->m_levelsToClaim))
-			);*/
-
-		std::string str = static_cast<CCLabelBMFont*>(this->getChildByID("progress-bar-label"))->getString();
-		std::regex pt(R"w((\d+)/(\d+))w");
-		std::smatch match;
-		if (std::regex_search(str, match, pt)) {
-			auto progress = stoi(match.str(2)) ? 100 * stoi(match.str(1)) / stoi(match.str(2)) : 0;
-			if (progress > 100)
-				progress = 100;
-			if (auto bar = this->getChildByID("progress-bar"))
-				paint(
-					bar->getChildByType<CCSprite>(0),
-					fmt::format("list-page-{}", isClaimed ? "done" : "todo"),
-					fmt::format("list-{}", isClaimed ? "done" : "todo"),
-					progress
-				);
-		} else
-			log::warn("Unable to recolor list progress bar: Regex match failed");
-
+				fmt::format("list-page-{}", p->m_featured ? (isClaimed ? "done" : "todo") : "unf"),
+				fmt::format("list-{}", p->m_featured ? (isClaimed ? "done" : "todo") : "unf"),
+				progress
+			);
 		return true;
 	}
 
-	/*
 	void onClaimReward(CCObject* sender) {
 		LevelListLayer::onClaimReward(sender);
-	}*/
+		if (!GameStatsManager::sharedState()->hasClaimedListReward(m_levelList))
+			return;
+			
+		//log::error("claimed = {}", GameStatsManager::sharedState()->hasClaimedListReward(m_levelList));
+		// hide diamond icon
+		this->getChildByID("small-diamonds-icon")->setVisible(false);
+
+		auto goal = m_levelList->m_levels.size();
+		auto progress = goal ? 100.f * m_levelList->completedLevels() / goal : 0;
+		if (progress > 100)
+			progress = 100;
+		// set text label
+		static_cast<CCLabelBMFont*>(this->getChildByID("progress-bar-label"))->setString(
+			fmt::format("{}/{}", m_levelList->completedLevels(), goal).c_str());
+		// set progress bar status
+		if (auto bar = this->getChildByID("progress-bar")) {
+			auto s = bar->getContentSize();
+			bar->getChildByType<CCSprite>(0)->setTextureRect(CCRect(0, 0, s.width * progress / 100, s.height));
+			// paint double default manually
+			if (Mod::get()->getSavedValue<BarColor>("list-page-done").mode || Mod::get()->getSettingValue<int64_t>("list-done-default-mode"))
+				paint(bar->getChildByType<CCSprite>(0), "list-page-done", "list-done", progress);
+			else
+				bar->getChildByType<CCSprite>(0)->setColor(defCol4);
+		}
+
+	}
 };
 
 #include <Geode/modify/LevelListCell.hpp>
@@ -295,39 +300,21 @@ class $modify(LevelListCell) {
 	void loadFromList(GJLevelList *p){
 
 		LevelListCell::loadFromList(p);
-		bool isClaimed = !(m_mainLayer->getChildByID("completion-diamond"));
-		/*
-		int count = 0;
-		for (auto [key, val] : CCDictionaryExt<int, GJGameLevel*>(p->m_levelsDict))
-			if (val->m_normalPercent.value() == 100)
-				count++;
-		log::error("{} count = {}", p->m_listName, count);
-		
-		if (auto bar = this->getChildByID("progress-bar"))
+		bool isClaimed = GameStatsManager::sharedState()->hasClaimedListReward(p);
+		auto goal = isClaimed || !p->m_featured ? p->m_levels.size() : p->m_levelsToClaim;
+		auto progress = goal ? 100.f * p->completedLevels() / goal : 0;
+		log::debug("debug claim = {} size = {} goal = {} completed = {}", isClaimed, p->m_levels.size(), p->m_levelsToClaim, p->completedLevels());
+		if (progress > 100)
+			progress = 100;
+		if (auto bar = m_mainLayer->getChildByID("progress-bar"))
 			paint(
 				bar->getChildByType<CCSprite>(0),
-				fmt::format("list-cell-{}", isClaimed ? "done" : "todo"), "list-cell",
-					100 * (isClaimed ? (count / p->m_levels.size()) : (count > p->m_levelsToClaim ? 1 : count / p->m_levelsToClaim))
-			);*/
+				fmt::format("list-cell-{}", p->m_featured ? (isClaimed ? "done" : "todo") : "unf"),
+				fmt::format("list-{}", p->m_featured ? (isClaimed ? "done" : "todo") : "unf"),
+				progress
+			);
+		}
 
-		std::string str = static_cast<CCLabelBMFont*>(m_mainLayer->getChildByID("progress-label"))->getString();
-		std::regex pt(R"w((\d+)/(\d+))w");
-		std::smatch match;
-		if (std::regex_search(str, match, pt)) {
-			// avoid zero division (how)
-			auto progress = stoi(match.str(2)) ? 100 * stof(match.str(1)) / stoi(match.str(2)) : 0;
-			if (progress > 100)
-				progress = 100;
-			if (auto bar = m_mainLayer->getChildByID("progress-bar"))
-				paint(
-					bar->getChildByType<CCSprite>(0),
-					fmt::format("list-cell-{}", isClaimed ? "done" : "todo"),
-					fmt::format("list-{}", isClaimed ? "done" : "todo"),
-					progress
-				);
-		} else
-			log::warn("Unable to recolor list progress bar: Regex match failed");
-	}
 };
 
 // Register setting

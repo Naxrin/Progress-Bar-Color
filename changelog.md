@@ -1,6 +1,13 @@
+# 3.5.0
+- Less toxic list progress logic (goodbye regex match)
+- Customize unfeatured lists' progress bars individually
+- Fix the issue that unfeatured lists' progress are all considered zero
+- Real time refresh in list rewards claimed
+#### Note
+- Rainbow like bars soon
+
 # 3.4.2
 - Another zero division fix
-
 # 3.4.1
 - Fix divided by Zero Error crash (why is there empty level lists?)
 - This mod should really work with betterpause now

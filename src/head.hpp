@@ -7,16 +7,16 @@ using namespace geode::prelude;
 
 static const char* followeds[6] = {"Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"};
 const std::string titles[6] = {"Level Info Menu", "Pause Menu", "Official Levels", "Quests Page", "List Page", "List Cell"};
-const std::string items[7] = {"Normal", "Practice", "Top", "Middle", "Bottom", "Unclaimed", "Claimed"};
+const std::string items[8] = {"Normal", "Practice", "Top", "Middle", "Bottom", "Unclaimed", "Claimed", "Unfeatured"};
 const std::string modes[5] = {"Default", "Follow", "Manual", "Progress", "Random"};
 
-const std::string tabs[13] = {
+const std::string tabs[15] = {
     "info-menu-normal", "info-menu-practice",
-    "pause-menu-normal", "pause-menu-practice", 
+    "pause-menu-normal", "pause-menu-practice",
     "official-levels-normal", "official-levels-practice",
     "quest-top", "quest-middle", "quest-bottom",
-    "list-page-todo", "list-page-done",
-    "list-cell-todo", "list-cell-done"
+    "list-page-todo", "list-page-done", "list-page-unf",
+    "list-cell-todo", "list-cell-done", "list-cell-unf"
 };
 
 // struct setup for a color channel
@@ -297,14 +297,14 @@ public:
 // menu for advanced settings
 class AdvancedMenu : public Popup<> {
 private:
-    // left menu item item (from buttom to top)
+    // left menu item item (from bottom to top)
     const std::vector<bool> types = {
-        false, false, true, false, false, true, 
+        false, false, false, true, false, false, false, true,
         false, false, false, true,
         false, false, true, false, false, true, false, false, true
     };
     // reversed 
-    const std::vector<short> ops = {0, 1, 0, 1, 0, 1, 2, 3, 4, 5, 6, 5, 6};
+    const std::vector<short> ops = {0, 1, 0, 1, 0, 1, 2, 3, 4, 5, 6, 7, 5, 6, 7};
 protected:
 
     // save the current selected tab in the left
