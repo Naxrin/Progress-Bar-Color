@@ -1,6 +1,4 @@
-#include <Geode/binding/GameManager.hpp>
 #include <random>
-#include <regex>
 #include "head.hpp"
 
 using namespace geode::prelude;

@@ -18,7 +18,11 @@
 		"geode.node-ids": {
 			"version": "v1.20.1",
 			"importance": "required"
-		}        
+		},
+        "geode.devtools": {
+            "version": "1.10.0",
+            "importance": "suggested"
+        }
     },
 	"settings":{
 		"normal-progress-bars": {

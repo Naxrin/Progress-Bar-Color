@@ -1,4 +1,5 @@
 #include "head.hpp"
+#include <geode.devtools/include/API.hpp>
 
 bool ModeCell::setup() {
 
@@ -390,4 +391,17 @@ void AdvancedMenu::onSwitchTab(CCObject* sender) {
 void AdvancedMenu::onClose(CCObject* sender) {
     Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
     Popup::onClose(sender);
+}
+
+void AdvancedMenu::registerDevTools() {
+    devtools::registerNode<AdvancedMenu>([](AdvancedMenu* node) {
+        devtools::property("tab", node->m_tab);
+    });
+}
+
+$on_mod(Loaded) {
+    // makes sure DevTools is loaded before registering
+    devtools::waitForDevTools([] {
+        AdvancedMenu::registerDevTools();
+    });
 }

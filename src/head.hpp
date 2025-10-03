@@ -349,6 +349,8 @@ protected:
     // close rewrite
     void onClose(CCObject*) override;
 public:
+    // register devtools
+    static void registerDevTools();
     // create
     static AdvancedMenu* create() {
         auto ret = new AdvancedMenu();
