@@ -1,16 +1,24 @@
 #pragma once
 
 #include <Geode/loader/SettingV3.hpp>
-#include <Geode/modify/CCMenuItemToggler.hpp>
+//#include <geode.custom-keybinds/include/OptionalAPI.hpp>
 
 using namespace geode::prelude;
+//using namespace keybinds;
 
 static const char* followeds[6] = {"Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"};
-const std::string titles[6] = {"Level Info Menu", "Pause Menu", "Official Levels", "Quests Page", "List Page", "List Cell"};
-const std::string items[8] = {"Normal", "Practice", "Top", "Middle", "Bottom", "Unclaimed", "Claimed", "Unfeatured"};
-const std::string modes[5] = {"Default", "Follow", "Manual", "Progress", "Random"};
+static const char* gradtypes[3] = {"Progress", "Time", "Space"};
 
-const std::string tabs[15] = {
+const std::string titles[7] = {"Common", "Info Menu", "Pause Menu", "Official Menu", "Quests Page", "List Page", "List Cell"};
+const std::string items[8] = {"Normal", "Practice", "Top", "Middle", "Bottom", "Unclaimed", "Claimed", "Unfeatured"};
+
+const std::string modes[10] = {"Default", "Follow", "Manual", "Random", "Chromatic", "Gradient", "Advanced"};
+
+const std::string commons[6] = {"Normal", "Practice", "Quest", "Unclaimed", "Claimed", "Unfeatured"};
+
+const std::string tabs[21] = {
+    "normal-default", "practice-default", "quest-default",
+    "list-todo-default", "list-done-default", "list-unf-default",
     "info-menu-normal", "info-menu-practice",
     "pause-menu-normal", "pause-menu-practice",
     "official-levels-normal", "official-levels-practice",
@@ -19,16 +27,44 @@ const std::string tabs[15] = {
     "list-cell-todo", "list-cell-done", "list-cell-unf"
 };
 
+const auto pathR = Mod::get()->getResourcesDir();
+const auto pathK = Mod::get()->getConfigDir();
+
+const auto shch = CCShaderCache::sharedShaderCache();
+
+enum class Mode : uint8_t {
+    Default, Follow, Manual, Gradient, Random, Chromatic, Advanced
+};
+
+enum class GradType : uint8_t {
+    Progress, Space, Time
+};
+
 // struct setup for a color channel
 struct BarColor {
-    int mode;
-    int follower;
-    ccColor3B color;
-    ccColor3B colorZero;
-    ccColor3B colorHdrd;
+    Mode mode; // mode
+    int follower; // player color channel to follow
+    ccColor4B color; // static color for manual mode
+    // gradient
+    GradType gradType; // gradient type
+    ccColor4B colorZero; // zero point color
+    ccColor4B colorHdrd; // hundred point color
+    int phase; // init phase
+    bool async; // use custom speed
+    float speed; // time varient speed
+    int satu; // saturation
+    int brit; // brightness
+    float length; // length in space, zero for rainbow mode OFF
+    bool randa; // random alpha
+    std::string vert; // vert file name
+    std::string frag; // frag file name
+
     bool operator == (const BarColor &c) const {
-	    return ((mode == c.mode) && (follower == c.follower) && (color == c.color));
-    };
+	    return ((mode == c.mode) && (follower == c.follower) && (color == c.color)) && (gradType == c.gradType)
+            && (colorZero == c.colorZero) && (colorHdrd == c.colorHdrd) && (phase == c.phase) && (async == c.async)
+            && (speed == c.speed) && (satu == c.satu) && (brit == c.brit) && (length == c.length)
+            && (randa == c.randa) && (vert == c.vert) && (frag == c.frag);
+    }
 };
 
 // normal & quest
@@ -40,59 +76,73 @@ const ccColor3B defCol3 = ccc3(255, 84, 50);
 // claimed
 const ccColor3B defCol4 = ccc3(80, 190, 255);
 
-inline BarColor makeDefStruct(ccColor3B col) {
+inline BarColor makeDefStruct(ccColor3B color, std::string key) {
     return BarColor{
-        .mode = 0, .follower = 0,
-        .color = col, .colorZero = col, .colorHdrd = col      
+        .mode = Mode::Default, .follower = 0, .color = to4B(color),
+        .gradType = GradType::Progress, .colorZero = to4B(color), .colorHdrd = to4B(color),
+        .phase = 0, .async = false, .speed = 1.f, .satu = 100, .brit = 100, .length = 1.f, .randa = false,
+        .vert = fmt::format("vert-{}.glsl", key), .frag = fmt::format("frag-{}.glsl", key)
     };
-
 }
 
 template<>
 struct matjson::Serialize<BarColor> {
     static Result<BarColor> fromJson(matjson::Value const& value) {
         return Ok(BarColor{
-            .mode = (int) value["mode"].asInt().unwrap() % 5,
-            .follower = (int) value["follower"].asInt().unwrap() % 6,
-            .color = ccc3(
-                (int) value["r"].asInt().unwrap(),
-                (int) value["g"].asInt().unwrap(),
-                (int) value["b"].asInt().unwrap()
+            .mode = value.contains("mode") ? Mode(value["mode"].asInt().unwrapOrDefault() % 7) : Mode::Default,
+            .follower = value.contains("follower") ? (int) value["follower"].asInt().unwrapOrDefault() % 6 : 0,
+            .color = ccc4(
+                GLubyte(value.contains("r") ? (int) value["r"].asInt().unwrapOr(255) : 255),
+                GLubyte(value.contains("g") ? (int) value["g"].asInt().unwrapOr(255) : 255),
+                GLubyte(value.contains("b") ? (int) value["b"].asInt().unwrapOr(255) : 255),
+                GLubyte(value.contains("a") ? (int) value["a"].asInt().unwrapOr(255) : 255)
             ),
-            .colorZero = value.contains("zero") ? value["zero"].asString().andThen([](auto str) { return cc3bFromHexString(str, true); })
-                .unwrapOr(ccc3(255,255,255)) : ccc3(255, 255, 255),
-            .colorHdrd = value.contains("hdrd") ? value["hdrd"].asString().andThen([](auto str) { return cc3bFromHexString(str, true); })
-                .unwrapOr(ccc3(255,255,255)) : ccc3(255, 255, 255)
+            .gradType = value.contains("grad-type") ? GradType((int)value["grad-type"].asInt().unwrapOrDefault() % 3) : GradType::Progress,
+            .colorZero = value.contains("zero") ? value["zero"].asString().andThen([](auto str) { return cc4bFromHexString(str, false, true); })
+                .unwrapOr(ccc4(255, 255, 255, 255)) : ccc4(255, 255, 255, 255),
+            .colorHdrd = value.contains("hdrd") ? value["hdrd"].asString().andThen([](auto str) { return cc4bFromHexString(str, false, true); })
+                .unwrapOr(ccc4(255, 255, 255, 255)) : ccc4(255, 255, 255, 255),
+            .phase = value.contains("phase") ? (int) value["phase"].asInt().unwrapOrDefault() % 360 : 0,
+            .async = value.contains("async") ? (bool) value["async"].asBool().unwrapOrDefault() : false,
+            .speed = value.contains("speed") ? (float) value["speed"].asDouble().unwrapOr(1.f) : 1.f,
+            .satu = value.contains("satu") ? (int) value["satu"].asDouble().unwrapOrDefault() % 100 : 100,
+            .brit = value.contains("brit") ? (int) value["brit"].asDouble().unwrapOrDefault() % 100 : 100,
+            .length = value.contains("length") ? (float) value["length"].asDouble().unwrapOr(1.f) : 1.f,
+            .randa = value.contains("randa") ? (bool) value["randa"].asBool().unwrapOrDefault() : false,
+            .vert = value.contains("vert") ? value["vert"].asString().unwrapOrDefault() : "",
+            .frag = value.contains("frag") ? value["frag"].asString().unwrapOrDefault() : ""
         });
     }
 
     static matjson::Value toJson(BarColor const& value) {
         return matjson::makeObject({
-            {"mode", value.mode},
+            {"mode", (int)value.mode},
             {"follower", value.follower},
             {"r", value.color.r},
             {"g", value.color.g},
             {"b", value.color.b},
-            {"zero", cc3bToHexString(value.colorZero)},
-            {"hdrd", cc3bToHexString(value.colorHdrd)}
+            {"a", value.color.a},
+            {"grad-type", (int)value.gradType},
+            {"zero", cc4bToHexString(value.colorZero)},
+            {"hdrd", cc4bToHexString(value.colorHdrd)},
+            {"phase", value.phase},
+            {"async", value.async},
+            {"speed", value.speed},
+            {"satu", value.satu},
+            {"brit", value.brit},
+            {"length", value.length},
+            {"randa", value.randa},
+            {"vert", value.vert},
+            {"frag", value.frag}
         });
     }
     static bool isJson(matjson::Value const& json) {
-        if (!json.isObject()) return false;
-        if (!json.contains("mode") || !json["mode"].isNumber()) return false;
-        if (!json.contains("follower") || !json["follower"].isNumber()) return false;
-        if (!json.contains("r") || !json["r"].isNumber()) return false;
-        if (!json.contains("g") || !json["g"].isNumber()) return false;
-        if (!json.contains("b") || !json["b"].isNumber()) return false;
-        if (!json.contains("zero") || !json["zero"].isString()) return false;
-        if (!json.contains("hdrd") || !json["hdrd"].isString()) return false;
-
         return true;
     }
 };
 
 enum class Signal {
-    Mode, Follower, Color, Zero, Hdrd
+    Mode, Follower, Color, Length, Speed, Async, Phase, Satu, Brit, GradType, Zero, Hdrd, RandA, Vert, Frag
 };
 
 template<typename T>
@@ -106,15 +156,43 @@ public:
     }
 };
 
+class C4Button : public CCMenuItemSpriteExtra {
+protected:
+    CCLabelBMFont* label;
+    ColorChannelSprite* spr;
+    // init
+    bool init(CCObject* target, SEL_MenuHandler callback);
+public:
+    // set value
+    void setValue(ccColor4B const& color) {
+        this->spr->setColor(to3B(color));
+        this->label->setString(numToString<float>(color.a / 255.f, 2).c_str());
+    }
+    // get value
+    ccColor4B getValue() {
+        return to4B(this->spr->getColor(), numFromString<float>(fmt::format("{}", this->label->getString())).unwrapOr(1.00) * 255);
+    }
+    // create
+    static C4Button* create(CCObject* target, SEL_MenuHandler callback) {
+        auto node = new C4Button();
+        if (node && node->init(target, callback)) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
 class SetupCell : public CCMenu {
 protected:
-    virtual bool setup() = 0;
     bool init() {
         if (!CCMenu::init())
             return false;
-            this->setPositionX(10.f);
-            this->setAnchorPoint(CCPoint(0.5, 0.f));
-        return this->setup();
+        this->setContentSize(ccp(280.f, 20.f));
+        this->setPositionX(10.f);
+        this->setAnchorPoint(CCPoint(0.5f, 0.f));
+        return true;
     }
 public:
     virtual void setVal(BarColor const& setup) = 0;
@@ -127,13 +205,10 @@ protected:
     // toggler
     CCMenuItemToggler* m_toggler;
     // init
-    bool setup() override;
+    bool init(const char* name);
     // on toggle
     void onToggle(CCObject* sender) {
         SignalEvent(Signal::Mode, this->getTag()).post();
-    }
-    void setTitle(const char* name) {
-        this->m_label->setString(name);
     }
 public:
     // toggle
@@ -145,7 +220,7 @@ public:
         this->m_toggler->toggle(false);      
     }
     void setVal(BarColor const& setup) override {
-        bool on = setup.mode == this->getTag();
+        bool on = setup.mode == Mode(this->getTag());
         if (on == m_toggler->isToggled())
             return;
         this->m_toggler->toggle(on);
@@ -156,8 +231,7 @@ public:
     }
     static ModeCell* create(const char* name) {
         auto node = new ModeCell();
-        if (node && node->init()) {
-            node->setTitle(name);
+        if (node && node->init(name)) {
             node->autorelease();
             return node;
         };
@@ -166,29 +240,42 @@ public:
     }
 };
 
-class FollowerCell : public SetupCell {
+class EnumCell : public SetupCell {
 protected:
+    // means gradient type or not
+    bool type;
     // current follower index
     int index;
     // label
     CCLabelBMFont* m_label;
     // init
-    bool setup() override;
+    bool init(bool type);
     // on toggle
     void onArrow(CCObject* sender) {
-        this->index = (index + (sender->getTag() == 2 ? 7 : 5)) % 6;
-        m_label->setString(followeds[this->index]);
-        SignalEvent(Signal::Follower, this->index).post();
+        if (type) {
+            this->index = (index + (sender->getTag() == 2 ? 4 : 2)) % 3;
+            m_label->setString(gradtypes[this->index]);
+            SignalEvent(Signal::GradType, this->index).post();
+        } else {
+            this->index = (index + (sender->getTag() == 2 ? 7 : 5)) % 6;
+            m_label->setString(followeds[this->index]);
+            SignalEvent(Signal::Follower, this->index).post();
+        }
     }
 public:
     // set current index
     void setVal(BarColor const& setup) override {
-        this->index = setup.follower;
-        m_label->setString(followeds[this->index]);
+        if (type) {
+            this->index = int(setup.gradType);
+            m_label->setString(gradtypes[this->index]);
+        } else {
+            this->index = setup.follower;
+            m_label->setString(followeds[this->index]);
+        }
     }
-    static FollowerCell* create() {
-        auto node = new FollowerCell();
-        if (node && node->init()) {
+    static EnumCell* create(bool type) {
+        auto node = new EnumCell();
+        if (node && node->init(type)) {
             node->autorelease();
             return node;
         };
@@ -200,27 +287,57 @@ public:
 class ColorCell : public SetupCell, public ColorPickPopupDelegate {
 protected:
     // node
-    CCMenuItemSpriteExtra* m_btn;
+    C4Button* m_btn;
     // init
-    bool setup() override;
+    bool init() override;
     // on button
     void onButton(CCObject* sender) {
-        auto popup = ColorPickPopup::create(m_btn->getColor());
+        auto popup = ColorPickPopup::create(m_btn->getValue());
         popup->setDelegate(this);
         popup->show();
     }
     // set current index
     void updateColor(ccColor4B const& color) override {
-        this->m_btn->setColor(to3B(color));
-        SignalEvent(Signal::Color, to3B(color)).post();
+        this->m_btn->setValue(color);
+        SignalEvent(Signal::Color, color).post();
     }
 public:
     void setVal(BarColor const& setup) override {
-        m_btn->setColor(setup.color);
+        m_btn->setValue(setup.color);
     }
     static ColorCell* create() {
         auto node = new ColorCell();
         if (node && node->init()) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
+// linear slider input bundle
+class SliderInputCell : public SetupCell, public TextInputDelegate {
+protected:
+    // value
+    float val;
+    // signal
+    Signal target;
+    // slider
+    Slider* m_slider;
+    // inputer
+    TextInput* m_inputer;
+    // init
+    bool init(Signal target, const char* text);
+    // on slider
+    void onSlider(CCObject* sender);
+    // text changed override
+    void textChanged(CCTextInputNode* p) override;
+public:
+    void setVal(BarColor const &val) override;
+    static SliderInputCell* create(Signal target, const char* text) {
+        auto node = new SliderInputCell();
+        if (node && node->init(target, text)) {
             node->autorelease();
             return node;
         };
@@ -234,26 +351,26 @@ protected:
     // which
     bool hd;
     // node
-    CCMenuItemSpriteExtra* m_btnZero;
-    CCMenuItemSpriteExtra* m_btnHdrd;
+    C4Button* m_btnZero;
+    C4Button* m_btnHdrd;
     // init
-    bool setup() override;
+    bool init() override;
     // on button
     void onButton(CCObject* sender) {
         this->hd = sender->getTag() == 2;
-        auto popup = ColorPickPopup::create(( this->hd ? m_btnHdrd : m_btnZero)->getColor());
+        auto popup = ColorPickPopup::create(( this->hd ? m_btnHdrd : m_btnZero)->getValue());
         popup->setDelegate(this);
         popup->show();
     }
     // set current index
     void updateColor(ccColor4B const& color) override {
-        (this->hd ? m_btnHdrd : m_btnZero)->setColor(to3B(color));
-        SignalEvent(this->hd ? Signal::Hdrd : Signal::Zero, to3B(color)).post();
+        (this->hd ? m_btnHdrd : m_btnZero)->setValue(color);
+        SignalEvent(this->hd ? Signal::Hdrd : Signal::Zero, color).post();
     }
 public:
     void setVal(BarColor const& setup) override {
-        m_btnZero->setColor(setup.colorZero);
-        m_btnHdrd->setColor(setup.colorHdrd);
+        m_btnZero->setValue(setup.colorZero);
+        m_btnHdrd->setValue(setup.colorHdrd);
     }
     static MultiColorCell* create() {
         auto node = new MultiColorCell();
@@ -266,25 +383,33 @@ public:
     }
 };
 
-/*
+// toggler
 class ToggleCell : public SetupCell {
 protected:
+    // randA or async
+    bool randa;
     // toggler
     CCMenuItemToggler* m_toggler;
     // init
-    bool setup();
+    bool init(bool randa);
     // on toggle
     void onToggle(CCObject* sender) {
-        SignalEvent(Signal::Instant, !m_toggler->isToggled()).post();
+        SignalEvent(this->randa ? Signal::RandA : Signal::Async, !m_toggler->isToggled()).post();
+    }
+    void onDesc(CCObject* sender) {
+        if (this->randa)
+            FLAlertLayer::create("Random Alpha", "Let alpha channel also acts randomly.", "OK")->show();
+        else
+            FLAlertLayer::create("Async Frequency", "Speed value will not sync with your common mod settings but follow its own value, set it below this checkbox.", "OK")->show();
     }
 public:
     // toggle
     void setVal(BarColor const& setup) {
-        this->m_toggler->toggle(setup.instant);
+        this->m_toggler->toggle(this->randa ? setup.randa : setup.async);
     }
-    static ToggleCell* create() {
+    static ToggleCell* create(bool randa) {
         auto node = new ToggleCell();
-        if (node && node->init()) {
+        if (node && node->init(randa)) {
             node->autorelease();
             return node;
         };
@@ -292,18 +417,48 @@ public:
         return nullptr;
     }
 };
-*/
+
+// shader file name
+class InputCell : public SetupCell, public TextInputDelegate {
+protected:
+    // false = vert
+    bool frag;
+    // toggler
+    TextInput* m_inputer;
+    // init
+    bool init(bool frag);
+    // on toggle
+    void textChanged(CCTextInputNode* p) override {
+        log::debug("post {}", p->getString());
+        SignalEvent(this->frag ? Signal::Frag : Signal::Vert, p->getString()).post();
+    }
+public:
+    // toggle
+    void setVal(BarColor const& setup) {
+        this->m_inputer->setString(this->frag ? setup.frag : setup.vert);
+    }
+    static InputCell* create(bool frag) {
+        auto node = new InputCell();
+        if (node && node->init(frag)) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
 
 // menu for advanced settings
 class AdvancedMenu : public Popup<> {
 private:
-    // left menu item item (from bottom to top)
+    // left menu item is a title or not (from bottom to top)
     const std::vector<bool> types = {
         false, false, false, true, false, false, false, true,
         false, false, false, true,
-        false, false, true, false, false, true, false, false, true
+        false, false, true, false, false, true, false, false, true,
+        false, false, false, false, false, false, true
     };
-    // reversed 
+
     const std::vector<short> ops = {0, 1, 0, 1, 0, 1, 2, 3, 4, 5, 6, 7, 5, 6, 7};
 protected:
 
@@ -313,22 +468,65 @@ protected:
     BarColor m_currentConfig;
     // items menu
     CCMenu* m_menuItems;
+    // preview sprite
+    CCSprite* m_sprPrev;
     // setup menu
-    CCMenu* m_menuSetup;
+    ScrollLayer* m_scrollerSetup;
+    // default hint
+    CCLabelBMFont* m_lbfDefault;
+
+    EventListener<EventFilter<SignalEvent<bool>>> listenerBool
+        = EventListener<EventFilter<SignalEvent<bool>>>(
+            [this] (SignalEvent<bool>* event) -> ListenerResult {
+                if (event->signal == Signal::Async)
+                    this->m_currentConfig.async = event->value;
+                if (event->signal == Signal::RandA)
+                    this->m_currentConfig.randa = event->value; 
+                return ListenerResult::Stop;
+            });
 
     EventListener<EventFilter<SignalEvent<int>>> listenerInt
         = EventListener<EventFilter<SignalEvent<int>>>(
             [this] (SignalEvent<int>* event) -> ListenerResult {
                 if (event->signal == Signal::Mode)
-                    this->switchMode(event->value);
+                    this->switchMode(Mode(event->value));
                 else if (event->signal == Signal::Follower)
                     this->m_currentConfig.follower = event->value;
+                else if (event->signal == Signal::GradType)
+                    this->m_currentConfig.gradType = GradType(event->value);
+                else if (event->signal == Signal::Phase)
+                    this->m_currentConfig.phase = event->value;
+                else if (event->signal == Signal::Satu)
+                    this->m_currentConfig.satu = event->value;
+                else if (event->signal == Signal::Brit)
+                    this->m_currentConfig.brit = event->value;
                 return ListenerResult::Stop;
             });
 
-    EventListener<EventFilter<SignalEvent<ccColor3B>>> listenerColor
-        = EventListener<EventFilter<SignalEvent<ccColor3B>>>(
-            [this] (SignalEvent<ccColor3B>* event) -> ListenerResult {
+    EventListener<EventFilter<SignalEvent<float>>> listenerFloat
+        = EventListener<EventFilter<SignalEvent<float>>>(
+            [this] (SignalEvent<float>* event) -> ListenerResult {
+                if (event->signal == Signal::Speed)
+                    this->m_currentConfig.speed = event->value;
+                if (event->signal == Signal::Length)
+                    this->m_currentConfig.length = event->value;
+                return ListenerResult::Stop;
+            });
+
+    EventListener<EventFilter<SignalEvent<std::string>>> listenerString
+        = EventListener<EventFilter<SignalEvent<std::string>>>(
+            [this] (SignalEvent<std::string>* event) -> ListenerResult {
+                log::debug("{}", event->value);
+                if (event->signal == Signal::Vert)
+                    this->m_currentConfig.vert = event->value;
+                if (event->signal == Signal::Frag)
+                    this->m_currentConfig.frag = event->value;
+                return ListenerResult::Stop;
+            });
+
+    EventListener<EventFilter<SignalEvent<ccColor4B>>> listenerColor
+        = EventListener<EventFilter<SignalEvent<ccColor4B>>>(
+            [this] (SignalEvent<ccColor4B>* event) -> ListenerResult {
                 if (event->signal == Signal::Color)
                     this->m_currentConfig.color = event->value;
                 if (event->signal == Signal::Zero)
@@ -343,7 +541,7 @@ protected:
     // initialize menu status in the right
     void initialize();
     // run animation switch mode
-    void switchMode(int mode);
+    void switchMode(Mode mode);
     // on switch to another tab
     void onSwitchTab(CCObject*);
     // close rewrite
