@@ -1,7 +1,7 @@
 # Progress Bar Color
 This mod lets you customize your progress bar color!  
 You can set your normal/practice progress bar manually or follow your player colors.  
-Note that follow dual color needs Weebify's Separate Dual Icons to be loaded, or this mod will only take your main player's color. 
+Note that follow dual color needs Weebify's [Separate Dual Icons](mod:weebify.separate_dual_icons) to be loaded, or this mod will only take your main player's color. 
 
 ### Supports:
 - Normal / Practice progress bars in official levels browser, level entrance, and pause menu;
@@ -26,7 +26,7 @@ You can set a common speed in mod settings popup, but if you check async option 
 You can see Async / Speed / Phase option in all thee three modes mentioned above, but all of the three async togglers point to a same value and will change together, same for speed / phase setup.
 
 ### Available Uniforms for GLSL file of Advanced Mode
-Now that the other six modes are only a set of introduction of where this mod supports to take as params, if you choose to write the shader yourself, these uniforms are availabe in your shader:
+Now that the other six modes are only a set of introduction of what this mod supports to take as params, if you choose to write the shader yourself, these uniforms are availabe in your shader:
 - **phase** = current cycle phase, takes 0-1 as value.
 - **progress** = current percentage of this progress bar, takes 0-100 as value.
 - **main** = your main player sprite color
@@ -35,7 +35,8 @@ Now that the other six modes are only a set of introduction of where this mod su
 - **main2** = your main player sprite color (p2 main color if SDI loaded)
 - **second2** = your second player sprite color (p2 second color if SDI loaded)
 - **glow2** = your main player glow outline color (p2 glow color if SDI loaded)
-SDI = [Separate Dual Icons](https://github.com/Weebifying/separate-dual-icons-geode) by Weebify.
+  
+SDI = Separate Dual Icons by Weebify.
 
 ### Contact / Report bugs:
 - Github issue
