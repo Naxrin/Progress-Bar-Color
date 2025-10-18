@@ -9,10 +9,34 @@ Note that follow dual color needs Weebify's Separate Dual Icons to be loaded, or
 - List Progress Bars in List Page and List Cells;
 
 ### Modes:
-- Default: As if mod not loaded;
-- Follow: follow player's color;
-- Manual: Pick the color by your own;
-- Chromatic: Dynamic rainbow like;
-- Progress: gradient relative with current percentage there;
-- Random: As this word says;
-- Advanced: Self defined for pro users.
+- **Default**: As if mod not loaded;
+- **Follow**: follow player's color;
+- **Manual**: Pick the color by your own;
+- **Chromatic**: Dynamic rainbow like;
+- **Progress**: gradient relative with current percentage there;
+- **Random**: As this word says;
+- **Advanced**: Self defined for pro users.
+
+### Manual for Time Varient Setups
+You can let your progress bars time varient in colors for current setups
+- Chromatic (unless speed = 0)
+- Progress (Time mode)
+- Advanced (if the *phase* is used and really affected gl_FragColor)
+You can set a common speed in mod settings popup, but if you check async option in a tab, your proogress bar will not sync this common speed but follow its own speed setup instead.  
+You can see Async / Speed / Phase option in all thee three modes mentioned above, but all of the three async togglers point to a same value and will change together, same for speed / phase setup.
+
+### Available Uniforms for GLSL file of Advanced Mode
+Now that the other six modes are only a set of introduction of where this mod supports to take as params, if you choose to write the shader yourself, these uniforms are availabe in your shader:
+- **phase** = current cycle phase, takes 0-1 as value.
+- **progress** = current percentage of this progress bar, takes 0-100 as value.
+- **main** = your main player sprite color
+- **second** = your second player sprite color
+- **glow** = your main player glow outline color
+- **main2** = your main player sprite color (p2 main color if SDI loaded)
+- **second2** = your second player sprite color (p2 second color if SDI loaded)
+- **glow2** = your main player glow outline color (p2 glow color if SDI loaded)
+SDI = [Separate Dual Icons](https://github.com/Weebifying/separate-dual-icons-geode) by Weebify.
+
+### Contact / Report bugs:
+- Github issue
+- Discord: Naxrin@6957

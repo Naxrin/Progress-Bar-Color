@@ -47,9 +47,9 @@ vec3 rainbow(float t) {
     } else if(t < 2.0/3.0) {
         color = mix(vec3(0.0, 1.0, 1.0), vec3(0.0, 0.0, 1.0), (t - 0.5) * 6.0);
     } else if(t < 5.0/6.0) {
-        color = mix(vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0), (t - 0.666) * 6.0);
+        color = mix(vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 1.0), (t - 0.666) * 6.0);
     } else {
-        color = mix(vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0), (t - 0.833) * 6.0);
+        color = mix(vec3(1.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0), (t - 0.833) * 6.0);
     }
     
     // apply luminance and brightness
@@ -60,6 +60,7 @@ vec3 rainbow(float t) {
 void main() {
     vec4 originalColor = texture2D(CC_Texture0, v_texCoord);
     float blendStrength = 0.7;
+    vec4 color;
 
     switch (mode) {
     // static
@@ -70,13 +71,17 @@ void main() {
     case 1:
         color = mix(colorl, colorr, v_texCoord.x);
         break;
-    // pulse
+    // pulse or static
     case 2:
-        color = mix(colorl, colorr, 1.0 - abs(2.0 * phase - 1.0));
+        color = mix(colorl, colorr, phase); //1.0 - abs(2.0 * phase - 1.0)
         break;
     // huecycle
     case 3:
-        color = rainbow(v_texCoord.x * wl + phase);
+        color = vec4(rainbow(v_texCoord.x * wl + phase), 1.0);
+        break;
+    // static
+    default:
+        color = vec4(1.0);
         break;
     }
 

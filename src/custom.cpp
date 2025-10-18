@@ -14,7 +14,7 @@ bool C4Button::init(CCObject* target, SEL_MenuHandler callback) {
     return true;
 }
 
-bool ModeCell::init(const char* name) {
+bool ModeCell::init(const char* name) {                                               
     if (!SetupCell::init())
         return false;
 
@@ -50,15 +50,17 @@ bool EnumCell::init(bool type) {
     sprArwL->setFlipX(true);
 
     auto btnArwL = CCMenuItemSpriteExtra::create(sprArwL, this, menu_selector(EnumCell::onArrow));
-    btnArwL->setPosition(ccp(10.f, 10.f));
-    btnArwL->setTag(1);    
+    btnArwL->setPosition(ccp(15.f, 10.f));
+    btnArwL->setScaleX(2);
+    btnArwL->setTag(1);
     this->addChild(btnArwL);
 
     auto sprArwR = CCSprite::createWithSpriteFrameName("navArrowBtn_001.png");
     sprArwR->setScale(0.25);
 
     auto btnArwR = CCMenuItemSpriteExtra::create(sprArwR, this, menu_selector(EnumCell::onArrow));
-    btnArwR->setPosition(ccp(190.f, 10.f));
+    btnArwR->setPosition(ccp(185.f, 10.f));
+    btnArwR->setScaleX(2);
     btnArwR->setTag(2);
     this->addChild(btnArwR);
 
@@ -280,12 +282,14 @@ bool InputCell::init(bool frag) {
     this->addChild(label);
     
     this->m_inputer = TextInput::create(320.f, "file name only");
+    m_inputer->setFilter("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789{}`~!@#$%^&*()-_=+[]{};',. \"");
     m_inputer->setPosition(ccp(150.f, 10.f));
-    m_inputer->getInputNode()->getTextLabel()->setPositionX(-140.f);
-    m_inputer->getInputNode()->getTextLabel()->setAnchorPoint(ccp(0.f, 0.5f));
+    //m_inputer->getInputNode()->getTextLabel()->setPositionX(-140.f);
+    //m_inputer->getInputNode()->getTextLabel()->setAnchorPoint(ccp(0.f, 0.5f));
     m_inputer->setScale(0.65f);
     m_inputer->setID("inputer");
     m_inputer->setDelegate(this);
+    //log::debug("filder = {} by default", m_inputer->getInputNode()->m_allowedChars);
     this->addChild(m_inputer);
 
     return true;
@@ -432,18 +436,21 @@ bool AdvancedMenu::setup() {
     auto tglChroma = ToggleCell::create(false);
     tglChroma->setTag(5);
     this->m_scrollerSetup->m_contentLayer->addChild(tglChroma);
+    this->asyncs.push_back(tglChroma);
 
     auto sliSpeedChroma = SliderInputCell::create(Signal::Speed, "Frequency");
     sliSpeedChroma->setTag(5);
     this->m_scrollerSetup->m_contentLayer->addChild(sliSpeedChroma);
-
-    auto sliLengthChroma = SliderInputCell::create(Signal::Length, "WaveLength");
-    sliLengthChroma->setTag(5);
-    this->m_scrollerSetup->m_contentLayer->addChild(sliLengthChroma);
+    this->speeds.push_back(sliSpeedChroma);
 
     auto sliPhaseChroma = SliderInputCell::create(Signal::Phase, "Phase");
     sliPhaseChroma->setTag(5);
     this->m_scrollerSetup->m_contentLayer->addChild(sliPhaseChroma);
+    this->phases.push_back(sliPhaseChroma);
+
+    auto sliLengthChroma = SliderInputCell::create(Signal::Length, "WaveLength");
+    sliLengthChroma->setTag(5);
+    this->m_scrollerSetup->m_contentLayer->addChild(sliLengthChroma);
 
     auto sliSatuChroma = SliderInputCell::create(Signal::Satu, "Saturation");
     sliSatuChroma->setTag(5);
@@ -460,6 +467,21 @@ bool AdvancedMenu::setup() {
     auto cellProgressTarget = EnumCell::create(true);
     cellProgressTarget->setTag(3);
     this->m_scrollerSetup->m_contentLayer->addChild(cellProgressTarget);
+
+    auto tglProgress = ToggleCell::create(false);
+    tglProgress->setTag(3);
+    this->m_scrollerSetup->m_contentLayer->addChild(tglProgress);
+    this->asyncs.push_back(tglProgress);
+
+    auto sliSpeedProgress = SliderInputCell::create(Signal::Speed, "Frequency");
+    sliSpeedProgress->setTag(3);
+    this->m_scrollerSetup->m_contentLayer->addChild(sliSpeedProgress);
+    this->speeds.push_back(sliSpeedProgress);
+
+    auto sliPhaseProgress = SliderInputCell::create(Signal::Phase, "Phase");
+    sliPhaseProgress->setTag(3);
+    this->m_scrollerSetup->m_contentLayer->addChild(sliPhaseProgress);
+    this->phases.push_back(sliPhaseProgress);
 
     auto lbfProgress = createHint("Tint regarding progress percentage.");
     lbfProgress->setTag(3);
@@ -497,6 +519,21 @@ bool AdvancedMenu::setup() {
     iptAdvancedFrag->setTag(6);
     this->m_scrollerSetup->m_contentLayer->addChild(iptAdvancedFrag);
 
+    auto tglAdvanced = ToggleCell::create(false);
+    tglAdvanced->setTag(6);
+    this->m_scrollerSetup->m_contentLayer->addChild(tglAdvanced);
+    this->asyncs.push_back(tglAdvanced);
+
+    auto sliSpeedAdvanced = SliderInputCell::create(Signal::Speed, "Frequency");
+    sliSpeedAdvanced->setTag(6);
+    this->m_scrollerSetup->m_contentLayer->addChild(sliSpeedAdvanced);
+    this->speeds.push_back(sliSpeedAdvanced);
+
+    auto sliPhaseAdvanced = SliderInputCell::create(Signal::Phase, "Phase");
+    sliPhaseAdvanced->setTag(6);
+    this->m_scrollerSetup->m_contentLayer->addChild(sliPhaseAdvanced);
+    this->phases.push_back(sliPhaseAdvanced);
+
     // apply
     auto sprApply = ButtonSprite::create("Apply", "goldFont.fnt", "GJ_button_01.png", 0.8);
     sprApply->setScale(0.8);
@@ -505,6 +542,7 @@ bool AdvancedMenu::setup() {
     btnApply->setPosition(ccp(405.f - size.width / 2, 15.f + size.height / 2));
     m_mainLayer->getChildByType<CCMenu>(0)->addChild(btnApply);
 
+    /*
     // preview sprite
     auto sprPrevBase = CCSprite::create("GJ_progressBar_001.png");
     sprPrevBase->setPosition(ccp(240.f, 15.f + size.height / 2));
@@ -519,7 +557,7 @@ bool AdvancedMenu::setup() {
     m_sprPrev->setScale(0.992);
     m_sprPrev->setScaleY(0.860);
     m_sprPrev->setPosition(ccp(bs.width / 2 - m_sprPrev->getScaledContentWidth() / 2, bs.height / 2));    
-    sprPrevBase->addChild(m_sprPrev);
+    sprPrevBase->addChild(m_sprPrev);*/
 
     // hint
     if (!Mod::get()->setSavedValue("showed-item-browser-hint", true)) {
@@ -594,7 +632,7 @@ void AdvancedMenu::switchMode(Mode mode) {
     // nonsense
     if (mode == m_currentConfig.mode) {
         // toggle it back
-        static_cast<ModeCell*>(this->m_scrollerSetup->m_contentLayer->getChildByTag((int)mode))->toggle();
+        static_cast<ModeCell*>(this->m_scrollerSetup->m_contentLayer->getChildByTag((int)mode))->toggle(false);
         return;        
     }
 

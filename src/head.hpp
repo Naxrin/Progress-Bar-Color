@@ -7,7 +7,7 @@ using namespace geode::prelude;
 //using namespace keybinds;
 
 static const char* followeds[6] = {"Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"};
-static const char* gradtypes[3] = {"Progress", "Time", "Space"};
+static const char* gradtypes[3] = {"Progress", "Space", "Time"};
 
 const std::string titles[7] = {"Common", "Info Menu", "Pause Menu", "Official Menu", "Quests Page", "List Page", "List Cell"};
 const std::string items[8] = {"Normal", "Practice", "Top", "Middle", "Bottom", "Unclaimed", "Claimed", "Unfeatured"};
@@ -105,8 +105,8 @@ struct matjson::Serialize<BarColor> {
             .phase = value.contains("phase") ? (int) value["phase"].asInt().unwrapOrDefault() % 360 : 0,
             .async = value.contains("async") ? (bool) value["async"].asBool().unwrapOrDefault() : false,
             .speed = value.contains("speed") ? (float) value["speed"].asDouble().unwrapOr(1.f) : 1.f,
-            .satu = value.contains("satu") ? (int) value["satu"].asDouble().unwrapOrDefault() % 100 : 100,
-            .brit = value.contains("brit") ? (int) value["brit"].asDouble().unwrapOrDefault() % 100 : 100,
+            .satu = value.contains("satu") ? (int) value["satu"].asDouble().unwrapOr(100) % 101 : 100,
+            .brit = value.contains("brit") ? (int) value["brit"].asDouble().unwrapOr(100) % 101 : 100,
             .length = value.contains("length") ? (float) value["length"].asDouble().unwrapOr(1.f) : 1.f,
             .randa = value.contains("randa") ? (bool) value["randa"].asBool().unwrapOrDefault() : false,
             .vert = value.contains("vert") ? value["vert"].asString().unwrapOrDefault() : "",
@@ -212,11 +212,13 @@ protected:
     }
 public:
     // toggle
-    void toggle() {
-        if (m_toggler->isToggled())
-            m_label->runAction(CCTintTo::create(0.2, 127, 127, 127));
-        else
-            m_label->runAction(CCTintTo::create(0.2, 0, 255, 0));
+    void toggle(bool on = true) {
+        if (on) {
+            if (m_toggler->isToggled())
+                m_label->runAction(CCTintTo::create(0.2, 127, 127, 127));
+            else
+                m_label->runAction(CCTintTo::create(0.2, 0, 255, 0));            
+        }
         this->m_toggler->toggle(false);      
     }
     void setVal(BarColor const& setup) override {
@@ -429,7 +431,6 @@ protected:
     bool init(bool frag);
     // on toggle
     void textChanged(CCTextInputNode* p) override {
-        log::debug("post {}", p->getString());
         SignalEvent(this->frag ? Signal::Frag : Signal::Vert, p->getString()).post();
     }
 public:
@@ -475,11 +476,21 @@ protected:
     // default hint
     CCLabelBMFont* m_lbfDefault;
 
+    // repeated menu lines
+    std::vector<ToggleCell*> asyncs;
+    std::vector<SliderInputCell*> speeds;
+    std::vector<SliderInputCell*> phases;
+
     EventListener<EventFilter<SignalEvent<bool>>> listenerBool
         = EventListener<EventFilter<SignalEvent<bool>>>(
             [this] (SignalEvent<bool>* event) -> ListenerResult {
-                if (event->signal == Signal::Async)
+                if (event->signal == Signal::Async) {
                     this->m_currentConfig.async = event->value;
+                    for (auto line : asyncs)
+                        if (line->getTag() != (int)m_currentConfig.mode)
+                            line->setVal(m_currentConfig);
+                }
+
                 if (event->signal == Signal::RandA)
                     this->m_currentConfig.randa = event->value; 
                 return ListenerResult::Stop;
@@ -494,29 +505,37 @@ protected:
                     this->m_currentConfig.follower = event->value;
                 else if (event->signal == Signal::GradType)
                     this->m_currentConfig.gradType = GradType(event->value);
-                else if (event->signal == Signal::Phase)
-                    this->m_currentConfig.phase = event->value;
-                else if (event->signal == Signal::Satu)
-                    this->m_currentConfig.satu = event->value;
-                else if (event->signal == Signal::Brit)
-                    this->m_currentConfig.brit = event->value;
+
                 return ListenerResult::Stop;
             });
 
     EventListener<EventFilter<SignalEvent<float>>> listenerFloat
         = EventListener<EventFilter<SignalEvent<float>>>(
             [this] (SignalEvent<float>* event) -> ListenerResult {
-                if (event->signal == Signal::Speed)
+                if (event->signal == Signal::Speed) {
                     this->m_currentConfig.speed = event->value;
-                if (event->signal == Signal::Length)
+                    for (auto line : speeds)
+                        if (line->getTag() != (int)m_currentConfig.mode)
+                            line->setVal(m_currentConfig);
+                }
+                else if (event->signal == Signal::Length)
                     this->m_currentConfig.length = event->value;
+                else if (event->signal == Signal::Phase) {
+                    this->m_currentConfig.phase = (int)event->value;
+                    for (auto line : phases)
+                        if (line->getTag() != (int)m_currentConfig.mode)
+                            line->setVal(m_currentConfig);
+                }
+                else if (event->signal == Signal::Satu)
+                    this->m_currentConfig.satu = (int)event->value;
+                else if (event->signal == Signal::Brit)
+                    this->m_currentConfig.brit = (int)event->value;                    
                 return ListenerResult::Stop;
             });
 
     EventListener<EventFilter<SignalEvent<std::string>>> listenerString
         = EventListener<EventFilter<SignalEvent<std::string>>>(
             [this] (SignalEvent<std::string>* event) -> ListenerResult {
-                log::debug("{}", event->value);
                 if (event->signal == Signal::Vert)
                     this->m_currentConfig.vert = event->value;
                 if (event->signal == Signal::Frag)
