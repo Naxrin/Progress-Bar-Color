@@ -53,7 +53,7 @@
 		},
 		"reload": {
 			"name": "Force Reload",
-			"description": "Reload custom shaders of advanced mode every time you enter the layer containing progress bars.\nUseful for debugging.",
+			"description": "Reload custom shaders of advanced mode every time you enter the layer containing progress bars.\nUseful for debugging your shaders.",
 			"type": "bool",
 			"default": true
 		}

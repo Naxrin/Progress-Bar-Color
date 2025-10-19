@@ -35,8 +35,11 @@ Now that the other six modes are only a set of introduction of what this mod sup
 - **main2** = your main player sprite color (p2 main color if SDI loaded)
 - **second2** = your second player sprite color (p2 second color if SDI loaded)
 - **glow2** = your main player glow outline color (p2 glow color if SDI loaded)
-SDI = Separate Dual Icons by Weebify.
-
+  
+SDI = Separate Dual Icons by Weebify.  
+  
+Obviously I can't introduce how to code a cool shader as expected for you here, if you need help in shader coding, go ask our Deepseek / ChatGPT / Gemini friend or someone else...  
+  
 ### Contact / Report bugs:
 - Github issue
 - Discord: Naxrin@6957

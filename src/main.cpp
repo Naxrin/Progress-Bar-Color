@@ -5,6 +5,7 @@
 
 using namespace geode::prelude;
 
+extern std::set<std::string> have_cache;
 // global variables
 ccColor3B main1, second1, glow1, main2, second2, glow2;
 
@@ -29,13 +30,16 @@ void refresh() {
 // load program
 CCGLProgram* get_prog(std::string key, bool adv = false, std::string vertfile = "", std::string fragfile = "") {
 	const char* full = fmt::format("{}"_spr, key).c_str();
-	if (!adv || !Mod::get()->getSettingValue<bool>("reload"))
-		if (auto program = shch->programForKey(full)) {
-			log::debug("program {} is already in index", full);
-			return program;			
-		}
-
-
+	
+	if (have_cache.contains(key)) {
+		if (!adv || !Mod::get()->getSettingValue<bool>("reload"))
+			if (auto program = shch->programForKey(full)) {
+				log::debug("program {} is already in index", full);
+				return program;			
+			}		
+	} else
+		have_cache.insert(key);
+	
 	auto program = new CCGLProgram();
 	std::string vert, frag;
 	if (adv) {
@@ -162,7 +166,7 @@ CCGLProgram* init_shader(CCSprite* target, std::string advKey, std::string defKe
 	else if (config.mode == Mode::Chromatic) {
 		prog->setUniformLocationWith1i(prog->getUniformLocationForName("mode"), 3);
 		prog->setUniformLocationWith1f(prog->getUniformLocationForName("phase"), config.phase / 360.f);
-		prog->setUniformLocationWith1f(prog->getUniformLocationForName("wl"), config.length);
+		prog->setUniformLocationWith1f(prog->getUniformLocationForName("freq"), config.length);
 		prog->setUniformLocationWith1f(prog->getUniformLocationForName("satu"), config.satu / 100.f);
 		prog->setUniformLocationWith1f(prog->getUniformLocationForName("brit"), config.brit / 100.f);
 	} else if (config.mode == Mode::Gradient) {
@@ -427,7 +431,7 @@ class $modify(DynamicOfficialLayer, LevelSelectLayer) {
 
 		m_fields->delta = fmod(m_fields->delta + dt * Mod::get()->getSettingValue<float>("speed"), 1);
 
-		log::debug("m_scrolls = {}", m_scrolls);
+		//log::debug("m_scrolls = {}", m_scrolls);
 		
 		this->paintProgressBar(
 			static_cast<LevelPage*>(this->m_scrollLayer->getChildByID("level-pages")

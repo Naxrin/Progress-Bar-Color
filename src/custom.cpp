@@ -1,6 +1,8 @@
 #include "head.hpp"
 #include <geode.devtools/include/API.hpp>
 
+std::set<std::string> have_cache;
+
 bool C4Button::init(CCObject* target, SEL_MenuHandler callback) {
     this->spr = ColorChannelSprite::create();
     this->spr->setScale(0.5);
@@ -106,7 +108,7 @@ bool SliderInputCell::init(Signal target, const char* text) {
     this->m_inputer = TextInput::create(60.f, text);
     this->m_inputer->setPosition(ccp(110.f, 10.f));
     this->m_inputer->setScale(0.65f);
-    this->m_inputer->setFilter(fmt::format("{}{}0123456789", target == Signal::Speed ? "-" : "",
+    this->m_inputer->setFilter(fmt::format("{}{}0123456789", target == Signal::Speed || target == Signal::Length ? "-" : "",
         target == Signal::Length || target == Signal::Speed ? "." : ""));
     this->m_inputer->setDelegate(this);
     this->addChild(this->m_inputer);
@@ -124,7 +126,7 @@ void SliderInputCell::onSlider(CCObject* sender) {
     float s = this->m_slider->getValue();
     switch (this->target) {
     case Signal::Length:
-        this->val = s;
+        this->val = 2 * s - 1;
         this->m_inputer->setString(numToString<float>(this->val, 2));
         break;
     case Signal::Speed:
@@ -151,12 +153,11 @@ void SliderInputCell::textChanged(CCTextInputNode* p) {
     switch (this->target) {
     case Signal::Length:
         this->val = numFromString<float>(p->getString()).unwrapOrDefault();
-        this->val = this->val > 1 ? 1 : this->val;
-        this->m_slider->setValue(val);
+        this->m_slider->setValue(val > 1 ? 1 : val < -1 ? 0 : (val + 1.f) / 2.f);
         break;
     case Signal::Speed:
         this->val = numFromString<float>(p->getString()).unwrapOrDefault();
-        this->m_slider->setValue(val > 5 ? 5 : val < -5 ? -5 : val);
+        this->m_slider->setValue(val > 5 ? 1 : val < -5 ? 0 : (val + 5.f) / 10.f);
         break;
     case Signal::Phase:
         this->val = numFromString<int>(p->getString()).unwrapOrDefault();
@@ -181,12 +182,12 @@ void SliderInputCell::setVal(BarColor const &val) {
     switch (this->target) {
     case Signal::Length:
         this->val = val.length;
-        this->m_slider->setValue(val.length);
+        this->m_slider->setValue(val.length > 1 ? 1 : val.length < -1 ? 0 : (val.length + 1) / 2);
         this->m_inputer->setString(numToString<float>(val.length, 2));
         return;
     case Signal::Speed:
         this->val = val.speed;
-        this->m_slider->setValue(val.speed > 5 ? 1 : val.speed < -5 ? -5 : (val.speed + 5.f) / 10.f);
+        this->m_slider->setValue(val.speed > 5 ? 1 : val.speed < -5 ? 0 : (val.speed + 5.f) / 10.f);
         this->m_inputer->setString(numToString<float>(val.speed, 2));
         return;
     case Signal::Phase:
@@ -251,7 +252,7 @@ bool ToggleCell::init(bool randa) {
     m_toggler->setCascadeOpacityEnabled(true);
     this->addChild(m_toggler);
 
-    auto label = CCLabelBMFont::create(this->randa ? "Random Alpha" : "Async Frequency", "bigFont.fnt", 200.f);
+    auto label = CCLabelBMFont::create(this->randa ? "Random Alpha" : "Async Speed", "bigFont.fnt", 200.f);
     label->setPosition(ccp(25.f, 10.f));
     label->setAnchorPoint(ccp(0.f, 0.5f));
     label->setScale(0.4f);
@@ -314,6 +315,7 @@ inline CCLabelBMFont* createHint(const char* name) {
 
 bool AdvancedMenu::setup() {
     this->setTitle("Progress Bar Color Setup");
+    have_cache.clear();
 
     // current tab
     this->m_tab = Mod::get()->getSavedValue<int64_t>("current-tab", 0);
@@ -438,7 +440,7 @@ bool AdvancedMenu::setup() {
     this->m_scrollerSetup->m_contentLayer->addChild(tglChroma);
     this->asyncs.push_back(tglChroma);
 
-    auto sliSpeedChroma = SliderInputCell::create(Signal::Speed, "Frequency");
+    auto sliSpeedChroma = SliderInputCell::create(Signal::Speed, "Speed");
     sliSpeedChroma->setTag(5);
     this->m_scrollerSetup->m_contentLayer->addChild(sliSpeedChroma);
     this->speeds.push_back(sliSpeedChroma);
@@ -448,7 +450,7 @@ bool AdvancedMenu::setup() {
     this->m_scrollerSetup->m_contentLayer->addChild(sliPhaseChroma);
     this->phases.push_back(sliPhaseChroma);
 
-    auto sliLengthChroma = SliderInputCell::create(Signal::Length, "WaveLength");
+    auto sliLengthChroma = SliderInputCell::create(Signal::Length, "Frequency");
     sliLengthChroma->setTag(5);
     this->m_scrollerSetup->m_contentLayer->addChild(sliLengthChroma);
 
@@ -625,6 +627,7 @@ void AdvancedMenu::initialize() {
         node->setPositionY(Y);
     }
 
+    this->m_scrollerSetup->moveToTop();
     this->m_scrollerSetup->m_contentLayer->setContentHeight(H);
 }
 
@@ -691,6 +694,7 @@ void AdvancedMenu::onSwitchTab(CCObject* sender) {
 
     // dump
     Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+    Mod::get()->setSavedValue("current-tab", tag);
 
     // white the selected tab
     m_menuItems->getChildByTag(m_tab)->runAction(CCTintTo::create(0.3, 127, 127, 127));

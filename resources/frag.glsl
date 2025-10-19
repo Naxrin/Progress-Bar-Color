@@ -1,14 +1,12 @@
 #ifdef GL_ES
 precision mediump float;
+precision mediump int;
 #endif
 
 // WARNING: Replacing this file may very likely result in game CRASH !!!
 // Also attempting to cover this file via texture loader will definitely result in vain.
 // If you hope to use your own shader file, apply advanced mode in mod settings and put your shader file in config folder.
 // If this file is already broken, get it from my github repo or redownload the whole mod will fix this.
-
-varying vec2 v_texCoord;
-varying vec4 v_color;
 
 // 0=static 1=gradient 2=pulse 3=huecycle
 uniform int mode;
@@ -24,12 +22,15 @@ uniform vec4 colorl;
 uniform vec4 colorr;
 
 // hue cycle
-uniform float wl;
+uniform float freq;
 uniform float satu;
 uniform float brit;
 
 // texture
 uniform sampler2D CC_Texture0;
+
+varying vec2 v_texCoord;
+varying vec4 v_color;
 
 // gen rainbow
 vec3 rainbow(float t) {
@@ -59,34 +60,16 @@ vec3 rainbow(float t) {
 
 void main() {
     vec4 originalColor = texture2D(CC_Texture0, v_texCoord);
-    float blendStrength = 0.7;
-    vec4 color;
+    vec4 color = vec4(1.0);
 
-    switch (mode) {
-    // static
-    case 0:
-        color = sc;
-        break;
-    // constant gradient
-    case 1:
-        color = mix(colorl, colorr, v_texCoord.x);
-        break;
-    // pulse or static
-    case 2:
+    if (mode == 0)
+        color = sc;     
+    else if (mode == 1)
+        color = mix(colorl, colorr, v_texCoord.x);        
+    else if (mode == 2)
         color = mix(colorl, colorr, phase); //1.0 - abs(2.0 * phase - 1.0)
-        break;
-    // huecycle
-    case 3:
-        color = vec4(rainbow(v_texCoord.x * wl + phase), 1.0);
-        break;
-    // static
-    default:
-        color = vec4(1.0);
-        break;
-    }
+    else if (mode == 3)
+        color = vec4(rainbow(v_texCoord.x * freq + phase), 1.0);
 
-    //vec3 blendedColor = mix(originalColor.rgb, originalColor.rgb * color.rgb, blendStrength);
-    
-    //gl_FragColor = vec4(blendedColor, originalColor.a * color.a);
     gl_FragColor = originalColor * color;
 }
