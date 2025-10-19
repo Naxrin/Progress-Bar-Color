@@ -1,3 +1,22 @@
+# 3.6.0
+#### New
+- Chromatic / Rainbow like bars! Chroma Icons side-note I mean
+- Opacity included in color config
+- Present modes are rewritten to shader based
+- Shader API (for deep players)
+- Common Settings are moved to mod menu (your previous data are once-time ported and will keep working after update)
+- Register some node member variables to DevTools
+#### Bugfix
+- Fix setup item title issue of the advanced mod menu
+- Fix the uncomfortable scrolling item tabs scroller issue
+- Optimized codes and mod desc
+#### Note
+- DevTools menu is for debug use, by editing them in game you agree to take all possible risks by your own
+- You can set the opacity to zero and your progress bars will be total invisible, but your being toxic or not is none of my business :/
+- This is an early release since shader based rewrite, so there may be countless bugs I've not ever met yet.
+#### ToDo
+- I should add a preview node in mod menu right?
+
 # 3.5.0
 - Less toxic list progress logic (goodbye regex match)
 - Customize unfeatured lists' progress bars individually
