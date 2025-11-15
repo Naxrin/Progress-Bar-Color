@@ -1,12 +1,12 @@
-{
-	"geode": "4.6.3",
+   {
+	"geode": "4.9.0",
 	"gd":{
 		"win": "2.2074",
 		"android": "2.2074",
 		"mac": "2.2074",
 		"ios": "2.2074"
 	},
-	"version": "v3.6.0",
+	"version": "v3.7.0",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
@@ -54,6 +54,12 @@
 		"reload": {
 			"name": "Force Reload",
 			"description": "Reload custom shaders of advanced mode every time you enter the layer containing progress bars.\nUseful for debugging your shaders.",
+			"type": "bool",
+			"default": true
+		},
+		"drop-bar-fix": {
+			"name": "No Platform Dropbar Progress",
+			"description": "Hide the meaningless progress bar in retry level dropbar for platform levels.",
 			"type": "bool",
 			"default": true
 		}

@@ -4,7 +4,7 @@ You can set your normal/practice progress bar manually or follow your player col
 Note that follow dual color needs Weebify's [Separate Dual Icons](https://github.com/Weebifying/separate-dual-icons-geode) to be loaded, or this mod will only take your main player's color. 
 
 ### Supports:
-- Normal / Practice progress bars in official levels browser, level entrance, and pause menu;
+- Normal / Practice progress bars in official levels browser, level entrance, pause menu and retry level drop bar;
 - Quest Progress Bars;
 - List Progress Bars in List Page and List Cells;
 
@@ -40,6 +40,8 @@ SDI = Separate Dual Icons by Weebify.
   
 Obviously I can't introduce how to code a cool shader as expected for you here, if you need help in shader coding, go ask our Deepseek / ChatGPT / Gemini friend or someone else...  
   
-### Contact / Report bugs:
+### Contact / Report Bugs
 - Github issue
-- Discord: Naxrin@6957
+- Discord: [Naxrin#6957](https://discordapp.com/users/414986613962309633) (recommended)  
+- Twitter / X: [@Naxrin19](https://x.com/Naxrin19) (not really check it often)
+- In-Game ID: Naxrin

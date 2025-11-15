@@ -145,6 +145,8 @@ void SliderInputCell::onSlider(CCObject* sender) {
         this->val = int(100 * s);
         this->m_inputer->setString(numToString<int>(this->val));
         break;
+    default:
+        break;
     }
     SignalEvent(this->target, this->val).post();
 }
@@ -174,6 +176,8 @@ void SliderInputCell::textChanged(CCTextInputNode* p) {
         this->val = this->val > 100 ? 100 : this->val;
         this->m_slider->setValue(val / 100.f);
         break;
+    default:
+        return;
     }
     SignalEvent(this->target, this->val).post();
 }
@@ -204,6 +208,8 @@ void SliderInputCell::setVal(BarColor const &val) {
         this->val = val.brit;
         this->m_slider->setValue(val.brit / 100.f);
         this->m_inputer->setString(numToString<int>(val.brit));
+        return;
+    default:
         return;
     }
 }
@@ -344,7 +350,7 @@ bool AdvancedMenu::setup() {
     m_menuItems->setID("items-menu");
     scrollerItems->m_contentLayer->addChild(m_menuItems);
 
-    int i = 7, j = 21;
+    int i = 8, j = 22;
     float h = 17.f;
 
     for (bool type : types) {
@@ -584,6 +590,7 @@ void AdvancedMenu::initialize() {
     auto lbf = static_cast<CCLabelBMFont*>(m_mainLayer->getChildByID("setup-title"));
     // title
     if (m_tab < 6) {
+        // common tabs
         lbf->setString((commons[m_tab] + (m_tab > 2 ? " List" : "")).c_str());
         this->m_lbfDefault->setString("No any change.");
     } else {
@@ -592,8 +599,10 @@ void AdvancedMenu::initialize() {
             lbf->setString((titles[m_tab / 2 - 2] + " - " + items[m_tab % 2]).c_str());
         else if (m_tab < 15)
             lbf->setString(("Quests - " + items[m_tab - 10]).c_str());
+        else if (m_tab < 21)
+            lbf->setString((titles[m_tab / 3 - 1] + " - " + items[m_tab % 3 + 5]).c_str());
         else
-            lbf->setString((titles[m_tab / 3 - 1] + " - " + items[m_tab % 3 + 5]).c_str());        
+            lbf->setString("Retry Level Drop Bar");
     }
 
     float Y = 0.f;

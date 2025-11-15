@@ -1,3 +1,11 @@
+# 3.6.1
+#### New
+- Preview Bar in mod menu
+- The one in retry level drop bar included
+- Better mod desc
+#### Bugfix
+- Fix some glitches i hope
+
 # 3.6.0
 #### New
 - Chromatic / Rainbow like bars! Chroma Icons side-note I mean

@@ -9,14 +9,14 @@ using namespace geode::prelude;
 static const char* followeds[6] = {"Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"};
 static const char* gradtypes[3] = {"Progress", "Space", "Time"};
 
-const std::string titles[7] = {"Common", "Info Menu", "Pause Menu", "Official Menu", "Quests Page", "List Page", "List Cell"};
-const std::string items[8] = {"Normal", "Practice", "Top", "Middle", "Bottom", "Unclaimed", "Claimed", "Unfeatured"};
+const std::string titles[8] = {"Common", "Info Menu", "Pause Menu", "Official Menu", "Quests Page", "List Page", "List Cell", "Other"};
+const std::string items[9] = {"Normal", "Practice", "Top", "Middle", "Bottom", "Unclaimed", "Claimed", "Unfeatured", "Drop Bar"};
 
-const std::string modes[10] = {"Default", "Follow", "Manual", "Random", "Chromatic", "Gradient", "Advanced"};
+const std::string modes[7] = {"Default", "Follow", "Manual", "Random", "Chromatic", "Gradient", "Advanced"};
 
 const std::string commons[6] = {"Normal", "Practice", "Quest", "Unclaimed", "Claimed", "Unfeatured"};
 
-const std::string tabs[21] = {
+const std::string tabs[22] = {
     "normal-default", "practice-default", "quest-default",
     "list-todo-default", "list-done-default", "list-unf-default",
     "info-menu-normal", "info-menu-practice",
@@ -24,7 +24,8 @@ const std::string tabs[21] = {
     "official-levels-normal", "official-levels-practice",
     "quest-top", "quest-middle", "quest-bottom",
     "list-page-todo", "list-page-done", "list-page-unf",
-    "list-cell-todo", "list-cell-done", "list-cell-unf"
+    "list-cell-todo", "list-cell-done", "list-cell-unf",
+    "drop-bar"
 };
 
 const auto pathR = Mod::get()->getResourcesDir();
@@ -435,7 +436,7 @@ protected:
     }
 public:
     // toggle
-    void setVal(BarColor const& setup) {
+    void setVal(BarColor const& setup) override {
         this->m_inputer->setString(this->frag ? setup.frag : setup.vert);
     }
     static InputCell* create(bool frag) {
@@ -454,13 +455,13 @@ class AdvancedMenu : public Popup<> {
 private:
     // left menu item is a title or not (from bottom to top)
     const std::vector<bool> types = {
-        false, false, false, true, false, false, false, true,
+        false, true, false, false, false, true, false, false, false, true,
         false, false, false, true,
         false, false, true, false, false, true, false, false, true,
         false, false, false, false, false, false, true
     };
 
-    const std::vector<short> ops = {0, 1, 0, 1, 0, 1, 2, 3, 4, 5, 6, 7, 5, 6, 7};
+    const std::vector<short> ops = {0, 1, 0, 1, 0, 1, 2, 3, 4, 5, 6, 7, 5, 6, 7, 8};
 protected:
 
     // save the current selected tab in the left

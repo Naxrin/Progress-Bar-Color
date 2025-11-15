@@ -1,6 +1,4 @@
-#include <Geode/binding/GameManager.hpp>
 #include <random>
-#include <regex>
 #include "head.hpp"
 
 using namespace geode::prelude;
@@ -29,12 +27,12 @@ void refresh() {
 
 // load program
 CCGLProgram* get_prog(std::string key, bool adv = false, std::string vertfile = "", std::string fragfile = "") {
-	const char* full = fmt::format("{}"_spr, key).c_str();
+	std::string full = fmt::format("{}"_spr, key);
 	
 	if (have_cache.contains(key)) {
 		if (!adv || !Mod::get()->getSettingValue<bool>("reload"))
-			if (auto program = shch->programForKey(full)) {
-				log::debug("program {} is already in index", full);
+			if (auto program = shch->programForKey(full.c_str())) {
+				log::debug("program {} is already in index", full.c_str());
 				return program;			
 			}		
 	} else
@@ -71,7 +69,7 @@ CCGLProgram* get_prog(std::string key, bool adv = false, std::string vertfile = 
 		return nullptr;
 	}
 
-	CCShaderCache::sharedShaderCache()->addProgram(program, full);
+	CCShaderCache::sharedShaderCache()->addProgram(program, full.c_str());
 	log::debug("shader for {} create successfully!", key);
 	return program;
 }
@@ -447,6 +445,47 @@ class $modify(DynamicOfficialLayer, LevelSelectLayer) {
 	}
 };
 
+#include <Geode/modify/RetryLevelLayer.hpp>
+class $modify(DynamicRetryLevelDropBar, RetryLevelLayer) {
+	struct Fields {
+		float delta, deltac;
+		CCSprite* bar;
+		CCGLProgram* prog;
+		BarColor c;
+	};
+
+	void showLayer(bool p) override {
+		RetryLevelLayer::showLayer(p);
+		log::debug("hook RetryLevelLayer::showLayer({})", p);
+		auto target = m_mainLayer->getChildByID("chain-left");
+		auto pl = PlayLayer::get();
+		log::debug("target = {}, {}", bool(target), bool(pl));
+		if (!target || !pl)
+			return;
+		if (pl->m_level->isPlatformer() && Mod::get()->getSettingValue<bool>("drop-bar-fix")) {
+			target->setVisible(false);
+			if (auto plabel = m_mainLayer->getChildByType<CCLabelBMFont>(3))
+				plabel->setVisible(false);
+			return;
+		}
+
+		refresh();
+		m_fields->bar = target->getChildByType<CCSprite>(0);
+		m_fields->prog = init_shader(
+			m_fields->bar, "drop-bar", "normal", "drop-bar",
+			m_fields->c, defCol1, pl->getCurrentPercentInt());
+
+		log::debug("percent = {}", pl->getCurrentPercentInt());
+
+		schedule(schedule_selector(DynamicRetryLevelDropBar::dynamic));
+	}
+
+	void dynamic(float dt) {
+		m_fields->delta = fmod(m_fields->delta + dt * Mod::get()->getSettingValue<float>("speed"), 1);
+		update_shader(m_fields->bar, m_fields->c, m_fields->prog, dt, m_fields->delta, m_fields->deltac);
+	}
+};
+
 #include <Geode/modify/ChallengeNode.hpp>
 class $modify(DynamicChallengeNode, ChallengeNode) {
 	struct Fields {
@@ -469,7 +508,9 @@ class $modify(DynamicChallengeNode, ChallengeNode) {
 			m_fields->bar = bar->getChildByType<CCSprite>(0);
 			m_fields->grade = "quest-" + grades[item->m_position];
 			m_fields->prog = init_shader(
-				m_fields->bar, m_fields->grade, "quest", m_fields->grade, m_fields->c, defCol1, 100.f * item->m_count.value() / item->m_goal.value());
+				m_fields->bar, m_fields->grade, "quest", m_fields->grade, 
+				m_fields->c, defCol1, 100.f * item->m_count.value() / item->m_goal.value()
+			);
 		}
 		schedule(schedule_selector(DynamicChallengeNode::dynamic));
 		return true;
