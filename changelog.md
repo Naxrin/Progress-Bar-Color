@@ -1,10 +1,11 @@
 # 3.6.1
 #### New
-- Preview Bar in mod menu
 - The one in retry level drop bar included
 - Better mod desc
 #### Bugfix
 - Fix some glitches i hope
+#### Todo
+- Preview Bar in mod menu (under debug test)
 
 # 3.6.0
 #### New
