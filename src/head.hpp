@@ -1,6 +1,9 @@
 #pragma once
 
+#include <Geode/Geode.hpp>
+#include <geode.devtools/include/API.hpp>
 #include <Geode/loader/SettingV3.hpp>
+#include <random>
 //#include <geode.custom-keybinds/include/OptionalAPI.hpp>
 
 using namespace geode::prelude;
@@ -27,6 +30,9 @@ const std::string tabs[22] = {
     "list-cell-todo", "list-cell-done", "list-cell-unf",
     "drop-bar"
 };
+
+// global variables
+static ccColor3B main1, second1, glow1, main2, second2, glow2;
 
 const auto pathR = Mod::get()->getResourcesDir();
 const auto pathK = Mod::get()->getConfigDir();
@@ -66,6 +72,17 @@ struct BarColor {
             && (speed == c.speed) && (satu == c.satu) && (brit == c.brit) && (length == c.length)
             && (randa == c.randa) && (vert == c.vert) && (frag == c.frag);
     }
+    /*
+    int shaderMode() const {
+        if (mode == Mode::Chromatic) return 3;
+        if (mode == Mode::Gradient) {
+            if (gradType == GradType::Space)
+                return 1;
+            if (gradType == GradType::Time)
+                return 2;
+        }
+        return 0;
+    }*/
 };
 
 // normal & quest
@@ -213,14 +230,12 @@ protected:
     }
 public:
     // toggle
-    void toggle(bool on = true) {
-        if (on) {
-            if (m_toggler->isToggled())
-                m_label->runAction(CCTintTo::create(0.2, 127, 127, 127));
-            else
-                m_label->runAction(CCTintTo::create(0.2, 0, 255, 0));            
-        }
-        this->m_toggler->toggle(false);      
+    void toggle(bool on, bool lbl) {
+        if (lbl)
+            m_label->runAction(CCTintTo::create(0.2, 0, 255, 0));
+        else
+            m_label->runAction(CCTintTo::create(0.2, 127, 127, 127));
+        this->m_toggler->toggle(on);
     }
     void setVal(BarColor const& setup) override {
         bool on = setup.mode == Mode(this->getTag());
@@ -450,7 +465,92 @@ public:
     }
 };
 
-// menu for advanced settings
+// init a target node (progress bar) regarding its keyname
+// @param advKey key for advanced
+// @param defKey key for default
+// @param progress current percentage of this progress bar
+// @param inCommon avoid infinite loop
+CCGLProgram* init_shader(
+    CCSprite* target, std::string advKey, std::string defKey, std::string progKey,
+    BarColor &config, ccColor3B defCol, int progress, bool inCommon = false);
+
+// update a target node (progress bar) regarding its keyname
+// @param advKey key for advanced
+// @param defKey key for default
+// @param progress current percentage of this progress bar
+// @param inCommon avoid infinite loop CCGLProgram *prog, 
+void update_shader(
+    CCSprite* target, BarColor const &config, CCGLProgram* prog,
+    float const &dt, float const &ph0, float &ph, bool inCommon = false);
+
+// refresh player colors
+void refresh();
+
+class PreviewBar : public CCLayer {
+protected:
+    // progress simulator
+    float progress;
+    // max target size
+    CCSize size;
+    // phase
+    float delta, deltac;
+    // the bar taken effect on
+    CCSprite* base, * target;
+    // init
+    bool init(BarColor* config);
+    // update
+    void update(float dt) override;
+    // decide it's touched or not
+    bool ccTouchBegan(CCTouch *touch, CCEvent* event) override;
+    // move touch to update progress
+    void ccTouchMoved(CCTouch *touch, CCEvent* event) override;
+    // set progress
+    void setProgress(float p);    
+public:
+    // config
+    BarColor* config;
+    // target program
+    CCGLProgram* program;
+    // update a uniform
+    void updateUniform(const char* name, int val) {
+        if (this->program)
+            this->program->setUniformLocationWith1i(this->program->getUniformLocationForName(name), val);
+        else
+            log::debug("update int uniform {} = {} failed!", name, val);
+    }
+    void updateUniform(const char* name, float val) {
+        if (this->program)
+            this->program->setUniformLocationWith1f(this->program->getUniformLocationForName(name), val);
+        else
+            log::debug("update float uniform {} = {} failed!", name, val);
+        }
+    void updateUniform(const char* name, ccColor3B val) {
+        if (this->program)
+            this->program->setUniformLocationWith3f(this->program->getUniformLocationForName(name), val.r / 255.f, val.g / 255.f, val.b / 255.f);
+        else
+            log::debug("update color3 uniform {} = {},{},{} failed!", name, val.r, val.g, val.b);
+        }
+    void updateUniform(const char* name, ccColor4B val) {
+        if (this->program)
+            this->program->setUniformLocationWith4f(this->program->getUniformLocationForName(name), val.r / 255.f, val.g / 255.f, val.b / 255.f, val.a / 255.f);
+        else
+            log::debug("update color4 uniform {} = {},{},{},{} failed!", name, val.r, val.g, val.b, val.a);
+        }
+    // init shader
+    void initShader(std::string advKey, std::string defKey, ccColor3B defCol, bool inCommon);
+    // create
+    static PreviewBar* create(BarColor* config) {
+        auto node = new PreviewBar();
+        if (node && node->init(config)) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
+// sorry zincoid
 class AdvancedMenu : public Popup<> {
 private:
     // left menu item is a title or not (from bottom to top)
@@ -476,6 +576,12 @@ protected:
     ScrollLayer* m_scrollerSetup;
     // default hint
     CCLabelBMFont* m_lbfDefault;
+    // preview bar
+    PreviewBar* m_previewBar;
+    // default key for preview
+    std::string defKey;
+    // default color for this tab
+    ccColor3B defColor;
 
     // repeated menu lines
     std::vector<ToggleCell*> asyncs;
@@ -487,13 +593,28 @@ protected:
             [this] (SignalEvent<bool>* event) -> ListenerResult {
                 if (event->signal == Signal::Async) {
                     this->m_currentConfig.async = event->value;
+                    // sync async togglers elsewhere
                     for (auto line : asyncs)
                         if (line->getTag() != (int)m_currentConfig.mode)
                             line->setVal(m_currentConfig);
                 }
 
-                if (event->signal == Signal::RandA)
-                    this->m_currentConfig.randa = event->value; 
+                if (event->signal == Signal::RandA) {
+                    this->m_currentConfig.randa = event->value;
+                    if (event->value) {
+                        // random
+                        std::random_device rd;
+                        std::mt19937 gen(rd());
+                        std::uniform_real_distribution<> dis(0.f, 1.f);
+                        this->m_previewBar->updateUniform("alpha", (float)dis(gen));
+                    } else
+                        this->m_previewBar->updateUniform("alpha", 1.f);
+                }
+
+                if (this->m_previewBar->program)
+                    this->m_previewBar->program->updateUniforms();
+                else
+                    log::debug("bool: Where is your program?");
                 return ListenerResult::Stop;
             });
 
@@ -502,11 +623,42 @@ protected:
             [this] (SignalEvent<int>* event) -> ListenerResult {
                 if (event->signal == Signal::Mode)
                     this->switchMode(Mode(event->value));
-                else if (event->signal == Signal::Follower)
+                else if (event->signal == Signal::Follower) {
                     this->m_currentConfig.follower = event->value;
-                else if (event->signal == Signal::GradType)
-                    this->m_currentConfig.gradType = GradType(event->value);
+                    this->m_previewBar->updateUniform("alpha", 1.f);
+                    switch (event->value) {
+                    case 0:
+                        this->m_previewBar->updateUniform("sc", main1);
+                        break;
+                    case 1:
+                        this->m_previewBar->updateUniform("sc", second1);
+                        break;
+                    case 2:
+                        this->m_previewBar->updateUniform("sc", glow1);
+                        break;			
+                    case 3:
+                        this->m_previewBar->updateUniform("sc", main2);
+                        break;
+                    case 4:
+                        this->m_previewBar->updateUniform("sc", second2);
+                        break;
+                    case 5:
+                        this->m_previewBar->updateUniform("sc", glow2);
+                        break;
+                    default:
+                        break;
+                    }
+                }
 
+                else if (event->signal == Signal::GradType) {
+                    this->m_currentConfig.gradType = GradType(event->value);
+                    this->m_previewBar->updateUniform("mode", event->value ? event->value : 4);
+                }
+
+                if (this->m_previewBar->program)
+                    this->m_previewBar->program->updateUniforms();
+                else
+                    log::debug("int: Where is your program?");
                 return ListenerResult::Stop;
             });
 
@@ -519,18 +671,29 @@ protected:
                         if (line->getTag() != (int)m_currentConfig.mode)
                             line->setVal(m_currentConfig);
                 }
-                else if (event->signal == Signal::Length)
+                else if (event->signal == Signal::Length) {
                     this->m_currentConfig.length = event->value;
+                    this->m_previewBar->updateUniform("freq", event->value);
+                }
+
                 else if (event->signal == Signal::Phase) {
                     this->m_currentConfig.phase = (int)event->value;
                     for (auto line : phases)
                         if (line->getTag() != (int)m_currentConfig.mode)
                             line->setVal(m_currentConfig);
                 }
-                else if (event->signal == Signal::Satu)
+                else if (event->signal == Signal::Satu) {
                     this->m_currentConfig.satu = (int)event->value;
-                else if (event->signal == Signal::Brit)
-                    this->m_currentConfig.brit = (int)event->value;                    
+                    this->m_previewBar->updateUniform("satu", event->value / 100.f);
+                }
+
+                else if (event->signal == Signal::Brit) {
+                    this->m_currentConfig.brit = (int)event->value;
+                    this->m_previewBar->updateUniform("brit", event->value / 100.f);
+                }
+                
+                if (this->m_previewBar->program)
+                    this->m_previewBar->program->updateUniforms();
                 return ListenerResult::Stop;
             });
 
@@ -541,18 +704,32 @@ protected:
                     this->m_currentConfig.vert = event->value;
                 if (event->signal == Signal::Frag)
                     this->m_currentConfig.frag = event->value;
+
+                this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor, m_tab < 6);
                 return ListenerResult::Stop;
             });
 
     EventListener<EventFilter<SignalEvent<ccColor4B>>> listenerColor
         = EventListener<EventFilter<SignalEvent<ccColor4B>>>(
             [this] (SignalEvent<ccColor4B>* event) -> ListenerResult {
-                if (event->signal == Signal::Color)
+                if (event->signal == Signal::Color) {
                     this->m_currentConfig.color = event->value;
-                if (event->signal == Signal::Zero)
+                    this->m_previewBar->updateUniform("sc", to3B(event->value));
+                    this->m_previewBar->updateUniform("alpha", event->value.a);
+                }
+                if (event->signal == Signal::Zero) {
                     this->m_currentConfig.colorZero = event->value;
-                if (event->signal == Signal::Hdrd)
+                    this->m_previewBar->updateUniform("colorl", event->value);
+                }
+                if (event->signal == Signal::Hdrd) {
                     this->m_currentConfig.colorHdrd = event->value;
+                    this->m_previewBar->updateUniform("colorr", event->value);
+                }
+
+                if (this->m_previewBar->program)
+                    this->m_previewBar->program->updateUniforms();
+                else
+                    log::debug("c4b: Where is your program?");
                 return ListenerResult::Stop;
             });
 
@@ -569,6 +746,10 @@ protected:
 public:
     // register devtools
     static void registerDevTools();
+    // get
+    static AdvancedMenu* get() {
+        return CCScene::get()->getChildByType<AdvancedMenu>(0);
+    }
     // create
     static AdvancedMenu* create() {
         auto ret = new AdvancedMenu();

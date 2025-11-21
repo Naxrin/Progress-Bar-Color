@@ -1,5 +1,5 @@
+#include "Geode/cocos/shaders/CCShaderCache.h"
 #include "head.hpp"
-#include <geode.devtools/include/API.hpp>
 
 std::set<std::string> have_cache;
 
@@ -47,22 +47,23 @@ bool EnumCell::init(bool type) {
 
     this->type = type;
 
-    auto sprArwL = CCSprite::createWithSpriteFrameName("navArrowBtn_001.png");
-    sprArwL->setScale(0.25);
-    sprArwL->setFlipX(true);
+    auto sprArwL = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
+    sprArwL->setScale(0.4f);
 
     auto btnArwL = CCMenuItemSpriteExtra::create(sprArwL, this, menu_selector(EnumCell::onArrow));
     btnArwL->setPosition(ccp(15.f, 10.f));
-    btnArwL->setScaleX(2);
+    //btnArwL->setScaleX(2);
     btnArwL->setTag(1);
+    
     this->addChild(btnArwL);
 
-    auto sprArwR = CCSprite::createWithSpriteFrameName("navArrowBtn_001.png");
-    sprArwR->setScale(0.25);
+    auto sprArwR = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
+    sprArwR->setScale(0.4f);
+    sprArwR->setFlipX(true);
 
     auto btnArwR = CCMenuItemSpriteExtra::create(sprArwR, this, menu_selector(EnumCell::onArrow));
     btnArwR->setPosition(ccp(185.f, 10.f));
-    btnArwR->setScaleX(2);
+    //btnArwR->setScaleX(2);
     btnArwR->setTag(2);
     this->addChild(btnArwR);
 
@@ -309,6 +310,75 @@ SettingNodeV3* AdvancedSetting::createNode(float width) {
     );
 }
 
+bool PreviewBar::init(BarColor* config) {
+    if (!CCLayer::init())
+        return false;
+
+    this->config = config;
+    this->setAnchorPoint(ccp(0.5f, 0.5f));
+    this->ignoreAnchorPointForPosition(false);
+
+    // preview sprite
+    this->base = CCSprite::create("GJ_progressBar_001.png");
+    base->setScale(0.56f);
+    this->size = base->getContentSize();
+    this->setContentSize(size * 0.56);
+    base->setPosition(size * 0.28);
+    //base->setPosition(ccp(240.f, 15.f + size.height / 2));
+    base->setColor(ccBLACK);
+    base->setOpacity(125);
+    this->addChild(base);
+
+    this->target = CCSprite::create("GJ_progressBar_001.png");
+    target->setAnchorPoint(ccp(0.f, 0.5f));
+    target->setScale(0.992);
+    target->setScaleY(0.860);
+    target->setPosition(ccp(size.width * 0.004, size.height * 0.5));
+    this->base->addChild(target);
+
+    this->setTouchEnabled(true);
+    this->setTouchMode(ccTouchesMode::kCCTouchesOneByOne);
+
+    this->setProgress(1.f);
+    this->scheduleUpdate();
+    return true;
+}
+
+void PreviewBar::update(float dt) {
+    this->delta = fmod(this->delta + dt * Mod::get()->getSettingValue<double>("speed"), 1);
+    update_shader(this->target, *this->config, this->program, dt, this->delta, this->deltac);
+}
+
+bool PreviewBar::ccTouchBegan(CCTouch *touch, CCEvent* event) {
+    auto t = this->convertTouchToNodeSpace(touch);
+    auto c = this->getContentSize();
+    return t.x >= 0 && t.x <= c.width && t.y >= 0 && t.y <= c.height;
+}
+
+void PreviewBar::ccTouchMoved(CCTouch *touch, CCEvent* event) {
+    auto x = this->convertTouchToNodeSpace(touch).x;
+    auto w = this->getContentWidth();
+    x = x > w ? w : (x < 0 ? 0 : x);
+    this->setProgress(x / w);
+}
+
+void PreviewBar::setProgress(float p) {
+    this->progress = 100 * p;
+    this->target->setTextureRect(CCRect(0.f, 0.f, p * size.width, size.height));
+    this->updateUniform("progress", this->progress);
+}
+
+void PreviewBar::initShader(std::string advKey, std::string defKey, ccColor3B defCol, bool inCommon) {
+    //CCShaderCache::purgeSharedShaderCache();
+    CC_SAFE_DELETE(this->program);
+    auto temp = *config;
+    log::debug("init shader mode = {}", (int)temp.mode);
+    this->program = init_shader(this->target, advKey, defKey, "preview",
+        temp, defCol, this->progress, inCommon);
+    this->delta = 0;
+    this->deltac = 0;
+}
+
 inline CCLabelBMFont* createHint(const char* name) {
     auto label = CCLabelBMFont::create(name, "chatFont.fnt", 240, CCTextAlignment::kCCTextAlignmentLeft);
     label->setPositionX(10.f);
@@ -325,12 +395,6 @@ bool AdvancedMenu::setup() {
 
     // current tab
     this->m_tab = Mod::get()->getSavedValue<int64_t>("current-tab", 0);
-    // load current config
-    this->m_currentConfig = Mod::get()->getSavedValue<BarColor>(
-        tabs[m_tab], makeDefStruct(
-            tabs[m_tab].find("list") ? (tabs[m_tab].find("done") ? defCol4 : defCol3) : (tabs[m_tab].find("practice") ? defCol2 : defCol1),
-            tabs[m_tab]
-    ));
 
     // division line
     auto lrcDivLine = CCLayerColor::create(ccc4(255, 255, 255, 192));
@@ -550,22 +614,13 @@ bool AdvancedMenu::setup() {
     btnApply->setPosition(ccp(405.f - size.width / 2, 15.f + size.height / 2));
     m_mainLayer->getChildByType<CCMenu>(0)->addChild(btnApply);
 
-    /*
     // preview sprite
-    auto sprPrevBase = CCSprite::create("GJ_progressBar_001.png");
-    sprPrevBase->setPosition(ccp(240.f, 15.f + size.height / 2));
-    sprPrevBase->setScale(0.6f);
-    sprPrevBase->setColor(ccBLACK);
-    m_mainLayer->addChild(sprPrevBase);
-
-    auto bs = sprPrevBase->getContentSize();
-
-    this->m_sprPrev = CCSprite::create("GJ_progressBar_001.png");
-    m_sprPrev->setAnchorPoint(ccp(0.f, 0.5f));
-    m_sprPrev->setScale(0.992);
-    m_sprPrev->setScaleY(0.860);
-    m_sprPrev->setPosition(ccp(bs.width / 2 - m_sprPrev->getScaledContentWidth() / 2, bs.height / 2));    
-    sprPrevBase->addChild(m_sprPrev);*/
+    // debug testing so set visible false
+    this->m_previewBar = PreviewBar::create(&this->m_currentConfig);
+    m_previewBar->setPosition(ccp(240.f, 15.f + size.height / 2));
+    m_previewBar->setID("preview-bar");
+    m_previewBar->setVisible(false);
+    m_mainLayer->addChild(m_previewBar);
 
     // hint
     if (!Mod::get()->setSavedValue("showed-item-browser-hint", true)) {
@@ -582,7 +637,6 @@ bool AdvancedMenu::setup() {
     }
 
     initialize();
-    scrollerItems->moveToTop();
     return true;
 }
 
@@ -593,6 +647,8 @@ void AdvancedMenu::initialize() {
         // common tabs
         lbf->setString((commons[m_tab] + (m_tab > 2 ? " List" : "")).c_str());
         this->m_lbfDefault->setString("No any change.");
+        this->defKey = tabs[m_tab];
+
     } else {
         this->m_lbfDefault->setString("Apply the common setup above.");
         if (m_tab < 12)
@@ -604,6 +660,30 @@ void AdvancedMenu::initialize() {
         else
             lbf->setString("Retry Level Drop Bar");
     }
+
+    // default key and color
+    if (m_tab == 6 || m_tab == 8 || m_tab == 10 || m_tab == 21) {
+        this->defKey = "normal";
+        this->defColor = defCol1;
+    } else if (m_tab == 7 || m_tab == 9 || m_tab == 11) {
+        this->defKey = "practice";
+        this->defColor = defCol2;
+    } else if (m_tab == 12 || m_tab == 13 || m_tab == 14) {
+        this->defKey = "quest";
+        this->defColor = defCol1;
+    } else if (m_tab == 15 || m_tab == 18) {
+        this->defKey = "list-todo";
+        this->defColor = defCol3;
+    } else if (m_tab == 16 || m_tab == 19) {
+        this->defKey = "list-done";
+        this->defColor = defCol4;
+    } else if (m_tab == 17 || m_tab == 20) {
+        this->defKey = "list-unf";
+        this->defColor = defCol4;
+    }
+
+    // load current config
+    this->m_currentConfig = Mod::get()->getSavedValue<BarColor>(tabs[m_tab], makeDefStruct(this->defColor, this->defKey));
 
     float Y = 0.f;
 
@@ -638,13 +718,16 @@ void AdvancedMenu::initialize() {
 
     this->m_scrollerSetup->moveToTop();
     this->m_scrollerSetup->m_contentLayer->setContentHeight(H);
+    // init the preview
+    log::debug("log preview {} -> {} / {}", m_tab, tabs[m_tab], this->defKey);
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor, this->m_tab < 6);
 }
 
 void AdvancedMenu::switchMode(Mode mode) {
     // nonsense
     if (mode == m_currentConfig.mode) {
         // toggle it back
-        static_cast<ModeCell*>(this->m_scrollerSetup->m_contentLayer->getChildByTag((int)mode))->toggle(false);
+        static_cast<ModeCell*>(this->m_scrollerSetup->m_contentLayer->getChildByTag((int)mode))->toggle(false, true);
         return;        
     }
 
@@ -658,13 +741,17 @@ void AdvancedMenu::switchMode(Mode mode) {
         if (node->getID() == "title") {
             display = true;
             if (node->getTag() == (int)mode)
-                static_cast<ModeCell*>(node)->toggle();
+                static_cast<ModeCell*>(node)->toggle(false, true);
             else if (node->getTag() == (int)m_currentConfig.mode)
-                static_cast<ModeCell*>(node)->toggle();
-        } else if (node->getTag() == (int)mode) {
+                static_cast<ModeCell*>(node)->toggle(false, false);
+        }
+        // not title but current mode
+        else if (node->getTag() == (int)mode) {
             display = true;
             node->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.2, scale, scale)));
-        } else {
+        }
+        // hide
+        else {
             display = false;
             node->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.2, scale, 0)));
         }
@@ -693,6 +780,8 @@ void AdvancedMenu::switchMode(Mode mode) {
 
     // write internal mode
     m_currentConfig.mode = mode;
+
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor, this->m_tab < 6);
 }
 
 void AdvancedMenu::onSwitchTab(CCObject* sender) {
@@ -710,21 +799,21 @@ void AdvancedMenu::onSwitchTab(CCObject* sender) {
 
     // switch to current config
     this->m_tab = tag;
-    this->m_currentConfig = Mod::get()->getSavedValue<BarColor>(
-        tabs[m_tab], makeDefStruct(
-            tabs[m_tab].find("list") ? (tabs[m_tab].find("todo") ? defCol3 : defCol4) : (tabs[m_tab].find("practice") ? defCol2 : defCol1),
-            tabs[m_tab]
-    ));
+
     // green the new tab
     m_menuItems->getChildByTag(m_tab)->runAction(CCTintTo::create(0.3, 0, 255, 0));
+
     // setup menu
-    for (auto child : CCArrayExt<CCMenu*>(this->m_scrollerSetup->m_contentLayer->getChildren()))
+    int count = this->m_scrollerSetup->m_contentLayer->getChildrenCount();
+    for (auto child : CCArrayExt<CCMenu*>(this->m_scrollerSetup->m_contentLayer->getChildren())) {
+        count--;
         child->runAction(CCSequence::create(
             CCFadeOut::create(0.15),
-            CCCallFunc::create(this, callfunc_selector(AdvancedMenu::initialize)),
+            CallFuncExt::create([this, count] { if (!count) this->initialize(); }),
             CCFadeIn::create(0.15),
             nullptr
-        ));
+        ));        
+    }
 }
 
 void AdvancedMenu::onClose(CCObject* sender) {
@@ -737,106 +826,3 @@ void AdvancedMenu::registerDevTools() {
         devtools::property("tab", node->m_tab);
     });
 }
-
-Mode refer_mode(std::string val) {
-    int i = 0;
-    for (auto mode : modes) {
-        if (val == mode)
-            return Mode(i);
-        i ++;
-    }
-    return Mode::Default;
-}
-
-int refer_follow(std::string val) {
-    int i = 0;
-    for (auto followed : followeds) {
-        if (val == followed)
-            return i;
-        i ++;
-    }
-    return 0;
-}
-
-$on_mod(Loaded) {
-    // makes sure DevTools is loaded before registering
-    devtools::waitForDevTools([] {
-        AdvancedMenu::registerDevTools();
-    });
-    
-    // port setttings to saved
-    if (Mod::get()->setSavedValue("ported-3.6.0", true))
-        return;
-
-    auto set = Mod::get()->getSavedSettingsData();
-
-    std::string keys[6] = {"normal", "practice", "quest", "list-todo", "list-done", "list-unf"};
-
-    for (auto item : keys) {
-        auto c1 = set.contains(item + "-default-color") ? ccc4(
-                    GLubyte(set[item + "-default-color"].contains("r") ? (int) set[item + "-default-color"]["r"].asInt().unwrapOr(255) : 255),
-                    GLubyte(set[item + "-default-color"].contains("g") ? (int) set[item + "-default-color"]["g"].asInt().unwrapOr(255) : 255),
-                    GLubyte(set[item + "-default-color"].contains("b") ? (int) set[item + "-default-color"]["b"].asInt().unwrapOr(255) : 255),
-                    GLubyte(set[item + "-default-color"].contains("a") ? (int) set[item + "-default-color"]["a"].asInt().unwrapOr(255) : 255)
-                ) : to4B(ccWHITE);
-
-        auto c2 = set.contains(item + "-default-another") ? ccc4(
-                    GLubyte(set[item + "-default-another"].contains("r") ? (int) set[item + "-default-another"]["r"].asInt().unwrapOr(255) : 255),
-                    GLubyte(set[item + "-default-another"].contains("g") ? (int) set[item + "-default-another"]["g"].asInt().unwrapOr(255) : 255),
-                    GLubyte(set[item + "-default-another"].contains("b") ? (int) set[item + "-default-another"]["b"].asInt().unwrapOr(255) : 255),
-                    GLubyte(set[item + "-default-another"].contains("a") ? (int) set[item + "-default-another"]["a"].asInt().unwrapOr(255) : 255)
-                ) : to4B(ccWHITE);
-
-        Mod::get()->setSavedValue(item + "-default", BarColor{
-            .mode = set.contains(item + "-default-mode") ? refer_mode(set[item + "-default-mode"].asString().unwrapOrDefault()) : Mode::Default,
-            .follower = set.contains(item + "-default-follower") ? refer_follow(set[item + "-default-follower"].asString().unwrapOrDefault()) : 0,
-            .color = c1,
-            .gradType = GradType::Progress,
-            .colorZero = c1,
-            .colorHdrd = c2,
-            .phase = 0,
-            .async = false,
-            .speed = 1.f,
-            .satu = 100,
-            .brit = 100,
-            .length = 1.f,
-            .randa = false,
-            .vert = fmt::format("vert-{}-default.glsl", item),
-            .frag = fmt::format("frag-{}-default.glsl", item)
-        });            
-    }
-
-    //for (auto k : tabs)
-    auto& val = Mod::get()->getSaveContainer();
-    for (auto& [k, v] : val) {
-        if (!v.isObject())
-            continue;
-        v["vert"] = fmt::format("vert-{}.glsl", k);
-        v["frag"] = fmt::format("frag-{}.glsl", k);
-    }
-    
-}
-
-$execute {
-    // Register setting
-    (void)Mod::get()->registerCustomSettingType("advanced-option", &AdvancedSetting::parse);
-}
-
-/*
-// register keybinds
-(void)[&]() -> Result<> {
-    GEODE_UNWRAP(BindManagerV2::registerBindable(GEODE_UNWRAP(BindableActionV2::create(
-        // ID, should be prefixed with mod ID
-        "settings-menu"_spr,
-        // Name
-        "Settings Menu",
-        // Description, leave empty for none
-        "Popup The Settings Menu of Progress Bars",
-        // Default binds
-        { GEODE_UNWRAP(KeybindV2::create(KEY_Q, ModifierV2::None)) },
-        // Category; use slashes for specifying subcategories. See the
-        // Category class for default categories
-        GEODE_UNWRAP(CategoryV2::create("Progress Bar Color/Settings"))
-    ))));
-    return Ok();
-}();*/

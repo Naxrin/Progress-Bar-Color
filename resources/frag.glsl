@@ -8,11 +8,15 @@ precision mediump int;
 // If you hope to use your own shader file, apply advanced mode in mod settings and put your shader file in config folder.
 // If this file is already broken, get it from my github repo or redownload the whole mod will fix this.
 
-// 0=static 1=gradient 2=pulse 3=huecycle
+// 0=static 1=gradient 2=pulse 3=huecycle 4=progress
 uniform int mode;
 
 // static color
-uniform vec4 sc;
+uniform vec3 sc;
+uniform float alpha;
+
+// progress
+uniform float progress;
 
 // pulse & huecycle
 uniform float phase;
@@ -63,13 +67,15 @@ void main() {
     vec4 color = vec4(1.0);
 
     if (mode == 0)
-        color = sc;     
+        color = vec4(sc, alpha);
     else if (mode == 1)
         color = mix(colorl, colorr, v_texCoord.x);        
     else if (mode == 2)
         color = mix(colorl, colorr, phase); //1.0 - abs(2.0 * phase - 1.0)
     else if (mode == 3)
         color = vec4(rainbow(v_texCoord.x * freq + phase), 1.0);
+    else if (mode == 4)
+        color = mix(colorl, colorr, progress / 100.0);
 
     gl_FragColor = originalColor * color;
 }
