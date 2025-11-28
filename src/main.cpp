@@ -217,15 +217,13 @@ class $modify(DynamicRetryLevelDropBar, RetryLevelLayer) {
 
 	void showLayer(bool p) override {
 		RetryLevelLayer::showLayer(p);
-		log::debug("hook RetryLevelLayer::showLayer({})", p);
 		auto target = m_mainLayer->getChildByID("chain-left");
 		auto pl = PlayLayer::get();
-		log::debug("target = {}, {}", bool(target), bool(pl));
 		if (!target || !pl)
 			return;
 		if (pl->m_level->isPlatformer() && Mod::get()->getSettingValue<bool>("drop-bar-fix")) {
 			target->setVisible(false);
-			if (auto plabel = m_mainLayer->getChildByType<CCLabelBMFont>(3))
+			if (auto plabel = m_mainLayer->getChildByType<CCLabelBMFont>(5))
 				plabel->setVisible(false);
 			return;
 		}

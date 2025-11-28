@@ -80,10 +80,9 @@ CCGLProgram* init_shader(
 	auto key = inCommon ? defKey + "-default" : advKey;
 	// reference
 	config = Mod::get()->getSavedValue<BarColor>(key, makeDefStruct(defCol, key));
-
+	log::debug("mode = {}", (int)config.mode);
 	// skip if default
 	if (config.mode == Mode::Default) {
-		//log::debug("sdv = {} def = {}", advKey, defKey)	;	
 		if (!inCommon)
 			return init_shader(target, advKey, defKey, progKey, config, defCol, progress, true);
 	}
@@ -154,8 +153,12 @@ CCGLProgram* init_shader(
 		prog->setUniformLocationWith3f(prog->getUniformLocationForName("sc"),
 			config.color.r / 255.f, config.color.g / 255.f, config.color.b / 255.f);
         prog->setUniformLocationWith1f(prog->getUniformLocationForName("alpha"), config.color.a / 255.f);
-	}
-	else if (config.mode == Mode::Chromatic) {
+	} else if (config.mode == Mode::Default) {
+		prog->setUniformLocationWith1i(prog->getUniformLocationForName("mode"), 0);
+		prog->setUniformLocationWith3f(prog->getUniformLocationForName("sc"),
+			defCol.r / 255.f, defCol.g / 255.f, defCol.b / 255.f);
+        prog->setUniformLocationWith1f(prog->getUniformLocationForName("alpha"), 1.0);
+	} else if (config.mode == Mode::Chromatic) {
 		prog->setUniformLocationWith1i(prog->getUniformLocationForName("mode"), 3);
 		prog->setUniformLocationWith1f(prog->getUniformLocationForName("phase"), config.phase / 360.f);
 		prog->setUniformLocationWith1f(prog->getUniformLocationForName("freq"), config.length);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Geode/loader/Event.hpp"
 #include <Geode/Geode.hpp>
 #include <geode.devtools/include/API.hpp>
 #include <Geode/loader/SettingV3.hpp>
@@ -88,7 +89,7 @@ struct BarColor {
 // normal & quest
 const ccColor3B defCol1 = ccc3(0, 255, 0);
 // practice
-const ccColor3B defCol2 = ccc3(255, 255, 0);
+const ccColor3B defCol2 = ccc3(0, 255, 255);
 // unclaimed
 const ccColor3B defCol3 = ccc3(255, 84, 50);
 // claimed
@@ -160,7 +161,7 @@ struct matjson::Serialize<BarColor> {
 };
 
 enum class Signal {
-    Mode, Follower, Color, Length, Speed, Async, Phase, Satu, Brit, GradType, Zero, Hdrd, RandA, Vert, Frag
+    Mode, Follower, Color, Length, Speed, Async, Phase, Satu, Brit, GradType, Zero, Hdrd, RandA, Vert, Frag, Slider
 };
 
 template<typename T>
@@ -335,7 +336,7 @@ public:
 };
 
 // linear slider input bundle
-class SliderInputCell : public SetupCell, public TextInputDelegate {
+class SliderInputCell : public SetupCell, public TextInputDelegate, public SliderDelegate {
 protected:
     // value
     float val;
@@ -351,6 +352,10 @@ protected:
     void onSlider(CCObject* sender);
     // text changed override
     void textChanged(CCTextInputNode* p) override;
+    // slider began
+    void sliderBegan(Slider* p) override;
+    // slider ended
+    void sliderEnded(Slider* p) override;
 public:
     void setVal(BarColor const &val) override;
     static SliderInputCell* create(Signal target, const char* text) {
@@ -497,7 +502,7 @@ protected:
     // the bar taken effect on
     CCSprite* base, * target;
     // init
-    bool init(BarColor* config);
+    bool init() override;
     // update
     void update(float dt) override;
     // decide it's touched or not
@@ -507,41 +512,44 @@ protected:
     // set progress
     void setProgress(float p);    
 public:
-    // config
-    BarColor* config;
+    BarColor config;
     // target program
     CCGLProgram* program;
     // update a uniform
     void updateUniform(const char* name, int val) {
-        if (this->program)
-            this->program->setUniformLocationWith1i(this->program->getUniformLocationForName(name), val);
+        auto l = this->program->getUniformLocationForName(name);
+        if (l != -1)
+            this->program->setUniformLocationWith1i(l, val);
         else
-            log::debug("update int uniform {} = {} failed!", name, val);
+            log::error("update int uniform {} = {} failed!", name, val);
     }
     void updateUniform(const char* name, float val) {
-        if (this->program)
-            this->program->setUniformLocationWith1f(this->program->getUniformLocationForName(name), val);
+        auto l = this->program->getUniformLocationForName(name);
+        if (l != -1)
+            this->program->setUniformLocationWith1f(l, val);
         else
-            log::debug("update float uniform {} = {} failed!", name, val);
+            log::error("update float uniform {} = {} failed!", name, val);
         }
     void updateUniform(const char* name, ccColor3B val) {
-        if (this->program)
-            this->program->setUniformLocationWith3f(this->program->getUniformLocationForName(name), val.r / 255.f, val.g / 255.f, val.b / 255.f);
+        auto l = this->program->getUniformLocationForName(name);
+        if (l != -1)
+            this->program->setUniformLocationWith3f(l, val.r / 255.f, val.g / 255.f, val.b / 255.f);
         else
-            log::debug("update color3 uniform {} = {},{},{} failed!", name, val.r, val.g, val.b);
+            log::error("update color3 uniform {} = {},{},{} failed!", name, val.r, val.g, val.b);
         }
     void updateUniform(const char* name, ccColor4B val) {
-        if (this->program)
-            this->program->setUniformLocationWith4f(this->program->getUniformLocationForName(name), val.r / 255.f, val.g / 255.f, val.b / 255.f, val.a / 255.f);
+        auto l = this->program->getUniformLocationForName(name);
+        if (l != -1)
+            this->program->setUniformLocationWith4f(l, val.r / 255.f, val.g / 255.f, val.b / 255.f, val.a / 255.f);
         else
-            log::debug("update color4 uniform {} = {},{},{},{} failed!", name, val.r, val.g, val.b, val.a);
+            log::error("update color4 uniform {} = {},{},{},{} failed!", name, val.r, val.g, val.b, val.a);
         }
     // init shader
-    void initShader(std::string advKey, std::string defKey, ccColor3B defCol, bool inCommon);
+    void initShader(std::string advKey, std::string defKey, ccColor3B defCol);
     // create
-    static PreviewBar* create(BarColor* config) {
+    static PreviewBar* create() {
         auto node = new PreviewBar();
-        if (node && node->init(config)) {
+        if (node && node->init()) {
             node->autorelease();
             return node;
         };
@@ -582,6 +590,8 @@ protected:
     std::string defKey;
     // default color for this tab
     ccColor3B defColor;
+    // on slider dragging
+    bool drag_slider;
 
     // repeated menu lines
     std::vector<ToggleCell*> asyncs;
@@ -591,7 +601,11 @@ protected:
     EventListener<EventFilter<SignalEvent<bool>>> listenerBool
         = EventListener<EventFilter<SignalEvent<bool>>>(
             [this] (SignalEvent<bool>* event) -> ListenerResult {
-                if (event->signal == Signal::Async) {
+                if  (event->signal == Signal::Slider) {
+                    this->drag_slider = event->value;
+                    return ListenerResult::Stop;
+                }
+                else if (event->signal == Signal::Async) {
                     this->m_currentConfig.async = event->value;
                     // sync async togglers elsewhere
                     for (auto line : asyncs)
@@ -599,7 +613,7 @@ protected:
                             line->setVal(m_currentConfig);
                 }
 
-                if (event->signal == Signal::RandA) {
+                else if (event->signal == Signal::RandA) {
                     this->m_currentConfig.randa = event->value;
                     if (event->value) {
                         // random
@@ -610,56 +624,20 @@ protected:
                     } else
                         this->m_previewBar->updateUniform("alpha", 1.f);
                 }
-
+                Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+                this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+                /*
                 if (this->m_previewBar->program)
                     this->m_previewBar->program->updateUniforms();
                 else
-                    log::debug("bool: Where is your program?");
+                    log::error("bool: Where is your program?");*/
                 return ListenerResult::Stop;
             });
 
     EventListener<EventFilter<SignalEvent<int>>> listenerInt
         = EventListener<EventFilter<SignalEvent<int>>>(
             [this] (SignalEvent<int>* event) -> ListenerResult {
-                if (event->signal == Signal::Mode)
-                    this->switchMode(Mode(event->value));
-                else if (event->signal == Signal::Follower) {
-                    this->m_currentConfig.follower = event->value;
-                    this->m_previewBar->updateUniform("alpha", 1.f);
-                    switch (event->value) {
-                    case 0:
-                        this->m_previewBar->updateUniform("sc", main1);
-                        break;
-                    case 1:
-                        this->m_previewBar->updateUniform("sc", second1);
-                        break;
-                    case 2:
-                        this->m_previewBar->updateUniform("sc", glow1);
-                        break;			
-                    case 3:
-                        this->m_previewBar->updateUniform("sc", main2);
-                        break;
-                    case 4:
-                        this->m_previewBar->updateUniform("sc", second2);
-                        break;
-                    case 5:
-                        this->m_previewBar->updateUniform("sc", glow2);
-                        break;
-                    default:
-                        break;
-                    }
-                }
-
-                else if (event->signal == Signal::GradType) {
-                    this->m_currentConfig.gradType = GradType(event->value);
-                    this->m_previewBar->updateUniform("mode", event->value ? event->value : 4);
-                }
-
-                if (this->m_previewBar->program)
-                    this->m_previewBar->program->updateUniforms();
-                else
-                    log::debug("int: Where is your program?");
-                return ListenerResult::Stop;
+                return this->handleIntSignal(event);
             });
 
     EventListener<EventFilter<SignalEvent<float>>> listenerFloat
@@ -691,9 +669,14 @@ protected:
                     this->m_currentConfig.brit = (int)event->value;
                     this->m_previewBar->updateUniform("brit", event->value / 100.f);
                 }
-                
+                log::warn("float: will try to update uniforms");
+                Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig); 
+                this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+                /*
                 if (this->m_previewBar->program)
                     this->m_previewBar->program->updateUniforms();
+                else
+                    log::error("float: Where is your program?");*/
                 return ListenerResult::Stop;
             });
 
@@ -705,7 +688,8 @@ protected:
                 if (event->signal == Signal::Frag)
                     this->m_currentConfig.frag = event->value;
 
-                this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor, m_tab < 6);
+                Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+                this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
                 return ListenerResult::Stop;
             });
 
@@ -725,13 +709,19 @@ protected:
                     this->m_currentConfig.colorHdrd = event->value;
                     this->m_previewBar->updateUniform("colorr", event->value);
                 }
-
+                log::warn("c4b: will try to update uniforms");
+                Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+                this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+                /*
                 if (this->m_previewBar->program)
                     this->m_previewBar->program->updateUniforms();
                 else
-                    log::debug("c4b: Where is your program?");
+                    log::error("c4b: Where is your program?");*/
                 return ListenerResult::Stop;
             });
+
+    // handle int signal
+    ListenerResult handleIntSignal(SignalEvent<int>* event);
 
     // rewrite setup ui
     bool setup() override;

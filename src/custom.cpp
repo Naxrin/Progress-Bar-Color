@@ -1,4 +1,4 @@
-#include "Geode/cocos/shaders/CCShaderCache.h"
+#include "Geode/loader/Event.hpp"
 #include "head.hpp"
 
 std::set<std::string> have_cache;
@@ -118,6 +118,7 @@ bool SliderInputCell::init(Signal target, const char* text) {
     this->m_slider->setPosition(ccp(200.f, 10.f));
     this->m_slider->setAnchorPoint(ccp(0.f, 0.f));
     this->m_slider->setScale(0.4f);
+    this->m_slider->m_delegate = this;
     this->addChild(m_slider);
 
     return true;
@@ -149,7 +150,15 @@ void SliderInputCell::onSlider(CCObject* sender) {
     default:
         break;
     }
+}
+
+void SliderInputCell::sliderBegan(Slider* p) {
+    SignalEvent(Signal::Slider, true).post();
+}
+
+void SliderInputCell::sliderEnded(Slider* p) {
     SignalEvent(this->target, this->val).post();
+    SignalEvent(Signal::Slider, false).post();
 }
 
 void SliderInputCell::textChanged(CCTextInputNode* p) {
@@ -310,11 +319,10 @@ SettingNodeV3* AdvancedSetting::createNode(float width) {
     );
 }
 
-bool PreviewBar::init(BarColor* config) {
+bool PreviewBar::init() {
     if (!CCLayer::init())
         return false;
 
-    this->config = config;
     this->setAnchorPoint(ccp(0.5f, 0.5f));
     this->ignoreAnchorPointForPosition(false);
 
@@ -346,7 +354,8 @@ bool PreviewBar::init(BarColor* config) {
 
 void PreviewBar::update(float dt) {
     this->delta = fmod(this->delta + dt * Mod::get()->getSettingValue<double>("speed"), 1);
-    update_shader(this->target, *this->config, this->program, dt, this->delta, this->deltac);
+    update_shader(this->target, this->config, this->program, dt, this->delta, this->deltac);
+    this->program->updateUniforms();
 }
 
 bool PreviewBar::ccTouchBegan(CCTouch *touch, CCEvent* event) {
@@ -365,16 +374,14 @@ void PreviewBar::ccTouchMoved(CCTouch *touch, CCEvent* event) {
 void PreviewBar::setProgress(float p) {
     this->progress = 100 * p;
     this->target->setTextureRect(CCRect(0.f, 0.f, p * size.width, size.height));
-    this->updateUniform("progress", this->progress);
+    if (this->program)
+        this->updateUniform("progress", this->progress);
 }
 
-void PreviewBar::initShader(std::string advKey, std::string defKey, ccColor3B defCol, bool inCommon) {
-    //CCShaderCache::purgeSharedShaderCache();
+void PreviewBar::initShader(std::string advKey, std::string defKey, ccColor3B defCol) {
     CC_SAFE_DELETE(this->program);
-    auto temp = *config;
-    log::debug("init shader mode = {}", (int)temp.mode);
     this->program = init_shader(this->target, advKey, defKey, "preview",
-        temp, defCol, this->progress, inCommon);
+        this->config, defCol, this->progress);
     this->delta = 0;
     this->deltac = 0;
 }
@@ -616,10 +623,10 @@ bool AdvancedMenu::setup() {
 
     // preview sprite
     // debug testing so set visible false
-    this->m_previewBar = PreviewBar::create(&this->m_currentConfig);
+    this->m_previewBar = PreviewBar::create();
     m_previewBar->setPosition(ccp(240.f, 15.f + size.height / 2));
     m_previewBar->setID("preview-bar");
-    m_previewBar->setVisible(false);
+    //m_previewBar->setVisible(false);
     m_mainLayer->addChild(m_previewBar);
 
     // hint
@@ -636,6 +643,7 @@ bool AdvancedMenu::setup() {
         )));
     }
 
+    refresh();
     initialize();
     return true;
 }
@@ -647,7 +655,10 @@ void AdvancedMenu::initialize() {
         // common tabs
         lbf->setString((commons[m_tab] + (m_tab > 2 ? " List" : "")).c_str());
         this->m_lbfDefault->setString("No any change.");
+        // default key
         this->defKey = tabs[m_tab];
+        // default color
+        this->defColor = m_tab < 3 ? (m_tab == 1 ? defCol2 : defCol1) : (m_tab == 3 ? defCol3 : defCol4);
 
     } else {
         this->m_lbfDefault->setString("Apply the common setup above.");
@@ -720,7 +731,56 @@ void AdvancedMenu::initialize() {
     this->m_scrollerSetup->m_contentLayer->setContentHeight(H);
     // init the preview
     log::debug("log preview {} -> {} / {}", m_tab, tabs[m_tab], this->defKey);
-    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor, this->m_tab < 6);
+    log::debug("switch tab init shader: defKey = {} defColor = {} {} {}", defKey, defColor.r, defColor.g, defColor.b);
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+}
+
+ListenerResult AdvancedMenu::handleIntSignal(SignalEvent<int>* event) {
+    if (event->signal == Signal::Mode) {
+        this->switchMode(Mode(event->value));
+        return ListenerResult::Stop;
+    }
+
+    else if (event->signal == Signal::Follower) {
+        this->m_currentConfig.follower = event->value;
+        this->m_previewBar->updateUniform("alpha", 1.f);
+        switch (event->value) {
+        case 0:
+            this->m_previewBar->updateUniform("sc", main1);
+            break;
+        case 1:
+            this->m_previewBar->updateUniform("sc", second1);
+            break;
+        case 2:
+            this->m_previewBar->updateUniform("sc", glow1);
+            break;			
+        case 3:
+            this->m_previewBar->updateUniform("sc", main2);
+            break;
+        case 4:
+            this->m_previewBar->updateUniform("sc", second2);
+            break;
+        case 5:
+            this->m_previewBar->updateUniform("sc", glow2);
+            break;
+        default:
+            break;
+        }
+    }
+
+    else if (event->signal == Signal::GradType) {
+        this->m_currentConfig.gradType = GradType(event->value);
+        this->m_previewBar->updateUniform("mode", event->value ? event->value : 4);
+    }
+    log::warn("int: will try to update uniforms");
+    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+    /*
+    if (this->m_previewBar->program)
+        this->m_previewBar->program->updateUniforms();
+    else
+        log::error("int: Where is your program?");*/
+    return ListenerResult::Stop;
 }
 
 void AdvancedMenu::switchMode(Mode mode) {
@@ -780,8 +840,9 @@ void AdvancedMenu::switchMode(Mode mode) {
 
     // write internal mode
     m_currentConfig.mode = mode;
-
-    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor, this->m_tab < 6);
+    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+    log::debug("switch mode init shader: defKey = {} defColor = {} {} {}", defKey, defColor.r, defColor.g, defColor.b);
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
 }
 
 void AdvancedMenu::onSwitchTab(CCObject* sender) {
@@ -791,7 +852,6 @@ void AdvancedMenu::onSwitchTab(CCObject* sender) {
         return;
 
     // dump
-    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
     Mod::get()->setSavedValue("current-tab", tag);
 
     // white the selected tab
