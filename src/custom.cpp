@@ -1,7 +1,11 @@
 #include "Geode/loader/Event.hpp"
+#include "ccTypes.h"
 #include "head.hpp"
+#include <random>
 
 std::set<std::string> have_cache;
+
+
 
 bool C4Button::init(CCObject* target, SEL_MenuHandler callback) {
     this->spr = ColorChannelSprite::create();
@@ -342,6 +346,8 @@ bool PreviewBar::init() {
     target->setScale(0.992);
     target->setScaleY(0.860);
     target->setPosition(ccp(size.width * 0.004, size.height * 0.5));
+    //log::debug("blend func = {} {}", target->m_sBlendFunc.src, target->m_sBlendFunc.dst);
+    //target->m_sBlendFunc = {GL_ZERO, GL_ALPHA};
     this->base->addChild(target);
 
     this->setTouchEnabled(true);
@@ -374,8 +380,11 @@ void PreviewBar::ccTouchMoved(CCTouch *touch, CCEvent* event) {
 void PreviewBar::setProgress(float p) {
     this->progress = 100 * p;
     this->target->setTextureRect(CCRect(0.f, 0.f, p * size.width, size.height));
-    if (this->program)
+    if (this->program) {
         this->updateUniform("progress", this->progress);
+        //this->program->updateUniforms();
+    }
+
 }
 
 void PreviewBar::initShader(std::string advKey, std::string defKey, ccColor3B defCol) {
@@ -552,7 +561,7 @@ bool AdvancedMenu::setup() {
     this->m_scrollerSetup->m_contentLayer->addChild(tglProgress);
     this->asyncs.push_back(tglProgress);
 
-    auto sliSpeedProgress = SliderInputCell::create(Signal::Speed, "Frequency");
+    auto sliSpeedProgress = SliderInputCell::create(Signal::Speed, "Speed");
     sliSpeedProgress->setTag(3);
     this->m_scrollerSetup->m_contentLayer->addChild(sliSpeedProgress);
     this->speeds.push_back(sliSpeedProgress);
@@ -735,6 +744,37 @@ void AdvancedMenu::initialize() {
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
 }
 
+ListenerResult AdvancedMenu::handleBoolSignal(SignalEvent<bool>* event) {
+    if  (event->signal == Signal::Slider) {
+        this->drag_slider = event->value;
+        return ListenerResult::Stop;
+    }
+    else if (event->signal == Signal::Async) {
+        this->m_currentConfig.async = event->value;
+        // sync async togglers elsewhere
+        for (auto line : asyncs)
+            if (line->getTag() != (int)m_currentConfig.mode)
+                line->setVal(m_currentConfig);
+    }
+
+    else if (event->signal == Signal::RandA) {
+        this->m_currentConfig.randa = event->value;
+        if (event->value) {
+            // random
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution<> dis(0.f, 1.f);
+            this->m_previewBar->updateUniform("alpha", (float)dis(gen));
+        } else
+            this->m_previewBar->updateUniform("alpha", 1.f);
+
+        return ListenerResult::Stop;
+    }
+    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+    return ListenerResult::Stop;
+}
+
 ListenerResult AdvancedMenu::handleIntSignal(SignalEvent<int>* event) {
     if (event->signal == Signal::Mode) {
         this->switchMode(Mode(event->value));
@@ -775,11 +815,70 @@ ListenerResult AdvancedMenu::handleIntSignal(SignalEvent<int>* event) {
     log::warn("int: will try to update uniforms");
     Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
-    /*
-    if (this->m_previewBar->program)
-        this->m_previewBar->program->updateUniforms();
-    else
-        log::error("int: Where is your program?");*/
+    return ListenerResult::Stop;
+}
+
+ListenerResult AdvancedMenu::handleFloatSignal(SignalEvent<float>* event) {
+    if (event->signal == Signal::Speed) {
+        this->m_currentConfig.speed = event->value;
+        for (auto line : speeds)
+            if (line->getTag() != (int)m_currentConfig.mode)
+                line->setVal(m_currentConfig);
+    }
+    else if (event->signal == Signal::Length) {
+        this->m_currentConfig.length = event->value;
+        this->m_previewBar->updateUniform("freq", event->value);
+    }
+
+    else if (event->signal == Signal::Phase) {
+        this->m_currentConfig.phase = (int)event->value;
+        for (auto line : phases)
+            if (line->getTag() != (int)m_currentConfig.mode)
+                line->setVal(m_currentConfig);
+    }
+    else if (event->signal == Signal::Satu) {
+        this->m_currentConfig.satu = (int)event->value;
+        this->m_previewBar->updateUniform("satu", event->value / 100.f);
+    }
+
+    else if (event->signal == Signal::Brit) {
+        this->m_currentConfig.brit = (int)event->value;
+        this->m_previewBar->updateUniform("brit", event->value / 100.f);
+    }
+    log::warn("float: will try to update uniforms");
+    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig); 
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+    return ListenerResult::Stop;
+}
+
+ListenerResult AdvancedMenu::handleStringSignal(SignalEvent<std::string>* event) {
+    if (event->signal == Signal::Vert)
+        this->m_currentConfig.vert = event->value;
+    if (event->signal == Signal::Frag)
+        this->m_currentConfig.frag = event->value;
+
+    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+    return ListenerResult::Stop;
+}
+
+ListenerResult AdvancedMenu::handleColorSignal(SignalEvent<ccColor4B>* event) {
+    if (event->signal == Signal::Color) {
+        this->m_currentConfig.color = event->value;
+        this->m_previewBar->updateUniform("sc", to3B(event->value));
+        this->m_previewBar->updateUniform("alpha", event->value.a);
+    }
+    if (event->signal == Signal::Zero) {
+        this->m_currentConfig.colorZero = event->value;
+        this->m_previewBar->updateUniform("colorl", event->value);
+    }
+    if (event->signal == Signal::Hdrd) {
+        this->m_currentConfig.colorHdrd = event->value;
+        this->m_previewBar->updateUniform("colorr", event->value);
+    }
+    log::warn("c4b: will try to update uniforms");
+    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
     return ListenerResult::Stop;
 }
 

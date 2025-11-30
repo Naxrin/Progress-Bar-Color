@@ -1,11 +1,12 @@
 # 3.7.0
 #### New
 - The one in retry level drop bar included
+- Preview Bar in mod menu
 - Better mod desc
 #### Bugfix
 - Fix some glitches i hope
 #### Todo
-- Preview Bar in mod menu
+- Look into alpha settings not displayed properly issue
 
 # 3.6.0
 #### New

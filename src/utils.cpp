@@ -1,4 +1,5 @@
 #include "head.hpp"
+#include <random>
 
 extern std::set<std::string> have_cache;
 
@@ -125,7 +126,7 @@ CCGLProgram* init_shader(
 	if (config.mode == Mode::Follow) {
 		// mode = static
 		prog->setUniformLocationWith1i(prog->getUniformLocationForName("mode"), 0);
-        prog->setUniformLocationWith1f(prog->getUniformLocationForName("alpha"), 1.f);
+        prog->setUniformLocationWith1f(prog->getUniformLocationForName("alpha"), 1.0);
 		switch (config.follower) {
 		case 0:
 			prog->setUniformLocationWith3f(prog->getUniformLocationForName("sc"), main1.r / 255.f, main1.g / 255.f, main1.b / 255.f);
@@ -194,7 +195,7 @@ CCGLProgram* init_shader(
 
 		prog->setUniformLocationWith1i(prog->getUniformLocationForName("mode"), 0);
 		prog->setUniformLocationWith3f(prog->getUniformLocationForName("sc"), dis(gen), dis(gen), dis(gen));
-        prog->setUniformLocationWith1f(prog->getUniformLocationForName("alpha"), config.randa ? dis(gen) : 1);
+        prog->setUniformLocationWith1f(prog->getUniformLocationForName("alpha"), config.randa ? dis(gen) : 1.0);
 	}
 
 	prog->updateUniforms();
