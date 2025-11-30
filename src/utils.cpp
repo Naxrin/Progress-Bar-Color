@@ -77,6 +77,8 @@ CCGLProgram* init_shader(
 	// maginot line
 	if (!target)
 		return nullptr;
+
+	target->m_sBlendFunc = {GL_SRC_ALPHA, GL_ONE};
 		
 	auto key = inCommon ? defKey + "-default" : advKey;
 	// reference

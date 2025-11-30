@@ -1,7 +1,6 @@
 #include "Geode/loader/Event.hpp"
 #include "ccTypes.h"
 #include "head.hpp"
-#include <random>
 
 std::set<std::string> have_cache;
 
@@ -346,8 +345,6 @@ bool PreviewBar::init() {
     target->setScale(0.992);
     target->setScaleY(0.860);
     target->setPosition(ccp(size.width * 0.004, size.height * 0.5));
-    //log::debug("blend func = {} {}", target->m_sBlendFunc.src, target->m_sBlendFunc.dst);
-    //target->m_sBlendFunc = {GL_ZERO, GL_ALPHA};
     this->base->addChild(target);
 
     this->setTouchEnabled(true);
@@ -552,6 +549,10 @@ bool AdvancedMenu::setup() {
     cellProgress->setTag(3);
     this->m_scrollerSetup->m_contentLayer->addChild(cellProgress);
 
+    auto lbfProgress = createHint("Tint regarding progress percentage.");
+    lbfProgress->setTag(3);
+    this->m_scrollerSetup->m_contentLayer->addChild(lbfProgress);
+    
     auto cellProgressTarget = EnumCell::create(true);
     cellProgressTarget->setTag(3);
     this->m_scrollerSetup->m_contentLayer->addChild(cellProgressTarget);
@@ -570,10 +571,6 @@ bool AdvancedMenu::setup() {
     sliPhaseProgress->setTag(3);
     this->m_scrollerSetup->m_contentLayer->addChild(sliPhaseProgress);
     this->phases.push_back(sliPhaseProgress);
-
-    auto lbfProgress = createHint("Tint regarding progress percentage.");
-    lbfProgress->setTag(3);
-    this->m_scrollerSetup->m_contentLayer->addChild(lbfProgress);
 
     auto cellProgressColor = MultiColorCell::create();
     cellProgressColor->setTag(3);
@@ -739,8 +736,6 @@ void AdvancedMenu::initialize() {
     this->m_scrollerSetup->moveToTop();
     this->m_scrollerSetup->m_contentLayer->setContentHeight(H);
     // init the preview
-    log::debug("log preview {} -> {} / {}", m_tab, tabs[m_tab], this->defKey);
-    log::debug("switch tab init shader: defKey = {} defColor = {} {} {}", defKey, defColor.r, defColor.g, defColor.b);
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
 }
 
@@ -757,19 +752,9 @@ ListenerResult AdvancedMenu::handleBoolSignal(SignalEvent<bool>* event) {
                 line->setVal(m_currentConfig);
     }
 
-    else if (event->signal == Signal::RandA) {
+    else if (event->signal == Signal::RandA)
         this->m_currentConfig.randa = event->value;
-        if (event->value) {
-            // random
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_real_distribution<> dis(0.f, 1.f);
-            this->m_previewBar->updateUniform("alpha", (float)dis(gen));
-        } else
-            this->m_previewBar->updateUniform("alpha", 1.f);
 
-        return ListenerResult::Stop;
-    }
     Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
     return ListenerResult::Stop;
@@ -781,38 +766,12 @@ ListenerResult AdvancedMenu::handleIntSignal(SignalEvent<int>* event) {
         return ListenerResult::Stop;
     }
 
-    else if (event->signal == Signal::Follower) {
+    else if (event->signal == Signal::Follower)
         this->m_currentConfig.follower = event->value;
-        this->m_previewBar->updateUniform("alpha", 1.f);
-        switch (event->value) {
-        case 0:
-            this->m_previewBar->updateUniform("sc", main1);
-            break;
-        case 1:
-            this->m_previewBar->updateUniform("sc", second1);
-            break;
-        case 2:
-            this->m_previewBar->updateUniform("sc", glow1);
-            break;			
-        case 3:
-            this->m_previewBar->updateUniform("sc", main2);
-            break;
-        case 4:
-            this->m_previewBar->updateUniform("sc", second2);
-            break;
-        case 5:
-            this->m_previewBar->updateUniform("sc", glow2);
-            break;
-        default:
-            break;
-        }
-    }
-
-    else if (event->signal == Signal::GradType) {
+    
+    else if (event->signal == Signal::GradType)
         this->m_currentConfig.gradType = GradType(event->value);
-        this->m_previewBar->updateUniform("mode", event->value ? event->value : 4);
-    }
-    log::warn("int: will try to update uniforms");
+
     Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
     return ListenerResult::Stop;
@@ -836,16 +795,12 @@ ListenerResult AdvancedMenu::handleFloatSignal(SignalEvent<float>* event) {
             if (line->getTag() != (int)m_currentConfig.mode)
                 line->setVal(m_currentConfig);
     }
-    else if (event->signal == Signal::Satu) {
+    else if (event->signal == Signal::Satu)
         this->m_currentConfig.satu = (int)event->value;
-        this->m_previewBar->updateUniform("satu", event->value / 100.f);
-    }
 
-    else if (event->signal == Signal::Brit) {
+    else if (event->signal == Signal::Brit)
         this->m_currentConfig.brit = (int)event->value;
-        this->m_previewBar->updateUniform("brit", event->value / 100.f);
-    }
-    log::warn("float: will try to update uniforms");
+    
     Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig); 
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
     return ListenerResult::Stop;
@@ -863,20 +818,13 @@ ListenerResult AdvancedMenu::handleStringSignal(SignalEvent<std::string>* event)
 }
 
 ListenerResult AdvancedMenu::handleColorSignal(SignalEvent<ccColor4B>* event) {
-    if (event->signal == Signal::Color) {
+    if (event->signal == Signal::Color)
         this->m_currentConfig.color = event->value;
-        this->m_previewBar->updateUniform("sc", to3B(event->value));
-        this->m_previewBar->updateUniform("alpha", event->value.a);
-    }
-    if (event->signal == Signal::Zero) {
+    if (event->signal == Signal::Zero)
         this->m_currentConfig.colorZero = event->value;
-        this->m_previewBar->updateUniform("colorl", event->value);
-    }
-    if (event->signal == Signal::Hdrd) {
+    if (event->signal == Signal::Hdrd)
         this->m_currentConfig.colorHdrd = event->value;
-        this->m_previewBar->updateUniform("colorr", event->value);
-    }
-    log::warn("c4b: will try to update uniforms");
+    
     Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
     return ListenerResult::Stop;
