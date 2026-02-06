@@ -1,3 +1,7 @@
+# 4.7.1-beta.1
+- Bump version to Geode 5.x@GD2.2081
+- Less dependencies
+
 # 3.7.1
 #### New
 - Preview Bar in mod menu

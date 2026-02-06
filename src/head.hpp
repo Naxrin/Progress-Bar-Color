@@ -1,14 +1,10 @@
 #pragma once
 
-#include "Geode/loader/Event.hpp"
 #include <Geode/Geode.hpp>
-#include <geode.devtools/include/API.hpp>
 #include <Geode/loader/SettingV3.hpp>
 
-//#include <geode.custom-keybinds/include/OptionalAPI.hpp>
 
 using namespace geode::prelude;
-//using namespace keybinds;
 
 static const char* followeds[6] = {"Main", "Secondary", "Glow", "Dual-Main", "Dual-Secondary", "Dual-Glow"};
 static const char* gradtypes[3] = {"Progress", "Space", "Time"};
@@ -549,7 +545,7 @@ public:
 };
 
 // sorry zincoid
-class AdvancedMenu : public Popup<> {
+class AdvancedMenu : public Popup {
 private:
     // left menu item is a title or not (from bottom to top)
     const std::vector<bool> types = {
