@@ -262,14 +262,12 @@ int refer_follow(std::string val) {
 }
 
 $on_mod(Loaded) {
-    // makes sure DevTools is loaded before registering
-    devtools::waitForDevTools([] {
-        AdvancedMenu::registerDevTools();
-    });
-    
     // port setttings to saved
     if (Mod::get()->setSavedValue("ported-3.6.0", true))
         return;
+
+    // Register setting
+    (void)Mod::get()->registerCustomSettingType("advanced-option", &AdvancedSetting::parse);
 
     auto set = Mod::get()->getSavedSettingsData();
 
@@ -319,27 +317,3 @@ $on_mod(Loaded) {
     }
     
 }
-
-$execute {
-    // Register setting
-    (void)Mod::get()->registerCustomSettingType("advanced-option", &AdvancedSetting::parse);
-}
-
-/*
-// register keybinds
-(void)[&]() -> Result<> {
-    GEODE_UNWRAP(BindManagerV2::registerBindable(GEODE_UNWRAP(BindableActionV2::create(
-        // ID, should be prefixed with mod ID
-        "settings-menu"_spr,
-        // Name
-        "Settings Menu",
-        // Description, leave empty for none
-        "Popup The Settings Menu of Progress Bars",
-        // Default binds
-        { GEODE_UNWRAP(KeybindV2::create(KEY_Q, ModifierV2::None)) },
-        // Category; use slashes for specifying subcategories. See the
-        // Category class for default categories
-        GEODE_UNWRAP(CategoryV2::create("Progress Bar Color/Settings"))
-    ))));
-    return Ok();
-}();*/

@@ -156,12 +156,12 @@ void SliderInputCell::onSlider(CCObject* sender) {
 }
 
 void SliderInputCell::sliderBegan(Slider* p) {
-    SignalEvent(Signal::Slider, true).post();
+    SignalEvent<bool>(Signal::Slider).send(true);
 }
 
 void SliderInputCell::sliderEnded(Slider* p) {
-    SignalEvent(this->target, this->val).post();
-    SignalEvent(Signal::Slider, false).post();
+    SignalEvent<float>(this->target).send(this->val);
+    SignalEvent<bool>(Signal::Slider).send(false);
 }
 
 void SliderInputCell::textChanged(CCTextInputNode* p) {
@@ -192,7 +192,7 @@ void SliderInputCell::textChanged(CCTextInputNode* p) {
     default:
         return;
     }
-    SignalEvent(this->target, this->val).post();
+    SignalEvent<float>(this->target).send(this->val);
 }
 
 void SliderInputCell::setVal(BarColor const &val) {
@@ -402,7 +402,10 @@ inline CCLabelBMFont* createHint(const char* name) {
     return label;
 }
 
-bool AdvancedMenu::setup() {
+bool AdvancedMenu::init() {
+    if (!Popup::init(420.f, 280.f))
+        return false;
+
     this->setTitle("Progress Bar Color Setup");
     have_cache.clear();
 
@@ -739,97 +742,6 @@ void AdvancedMenu::initialize() {
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
 }
 
-ListenerResult AdvancedMenu::handleBoolSignal(SignalEvent<bool>* event) {
-    if  (event->signal == Signal::Slider) {
-        this->drag_slider = event->value;
-        return ListenerResult::Stop;
-    }
-    else if (event->signal == Signal::Async) {
-        this->m_currentConfig.async = event->value;
-        // sync async togglers elsewhere
-        for (auto line : asyncs)
-            if (line->getTag() != (int)m_currentConfig.mode)
-                line->setVal(m_currentConfig);
-    }
-
-    else if (event->signal == Signal::RandA)
-        this->m_currentConfig.randa = event->value;
-
-    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
-    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
-    return ListenerResult::Stop;
-}
-
-ListenerResult AdvancedMenu::handleIntSignal(SignalEvent<int>* event) {
-    if (event->signal == Signal::Mode) {
-        this->switchMode(Mode(event->value));
-        return ListenerResult::Stop;
-    }
-
-    else if (event->signal == Signal::Follower)
-        this->m_currentConfig.follower = event->value;
-    
-    else if (event->signal == Signal::GradType)
-        this->m_currentConfig.gradType = GradType(event->value);
-
-    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
-    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
-    return ListenerResult::Stop;
-}
-
-ListenerResult AdvancedMenu::handleFloatSignal(SignalEvent<float>* event) {
-    if (event->signal == Signal::Speed) {
-        this->m_currentConfig.speed = event->value;
-        for (auto line : speeds)
-            if (line->getTag() != (int)m_currentConfig.mode)
-                line->setVal(m_currentConfig);
-    }
-    else if (event->signal == Signal::Length) {
-        this->m_currentConfig.length = event->value;
-        this->m_previewBar->updateUniform("freq", event->value);
-    }
-
-    else if (event->signal == Signal::Phase) {
-        this->m_currentConfig.phase = (int)event->value;
-        for (auto line : phases)
-            if (line->getTag() != (int)m_currentConfig.mode)
-                line->setVal(m_currentConfig);
-    }
-    else if (event->signal == Signal::Satu)
-        this->m_currentConfig.satu = (int)event->value;
-
-    else if (event->signal == Signal::Brit)
-        this->m_currentConfig.brit = (int)event->value;
-    
-    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig); 
-    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
-    return ListenerResult::Stop;
-}
-
-ListenerResult AdvancedMenu::handleStringSignal(SignalEvent<std::string>* event) {
-    if (event->signal == Signal::Vert)
-        this->m_currentConfig.vert = event->value;
-    if (event->signal == Signal::Frag)
-        this->m_currentConfig.frag = event->value;
-
-    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
-    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
-    return ListenerResult::Stop;
-}
-
-ListenerResult AdvancedMenu::handleColorSignal(SignalEvent<ccColor4B>* event) {
-    if (event->signal == Signal::Color)
-        this->m_currentConfig.color = event->value;
-    if (event->signal == Signal::Zero)
-        this->m_currentConfig.colorZero = event->value;
-    if (event->signal == Signal::Hdrd)
-        this->m_currentConfig.colorHdrd = event->value;
-    
-    Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
-    this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
-    return ListenerResult::Stop;
-}
-
 void AdvancedMenu::switchMode(Mode mode) {
     // nonsense
     if (mode == m_currentConfig.mode) {
@@ -926,10 +838,4 @@ void AdvancedMenu::onSwitchTab(CCObject* sender) {
 void AdvancedMenu::onClose(CCObject* sender) {
     Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
     Popup::onClose(sender);
-}
-
-void AdvancedMenu::registerDevTools() {
-    devtools::registerNode<AdvancedMenu>([](AdvancedMenu* node) {
-        devtools::property("tab", node->m_tab);
-    });
 }

@@ -161,15 +161,10 @@ enum class Signal {
 };
 
 template<typename T>
-class SignalEvent : public Event {
-public:
-    Signal signal;
-    T value;
-    SignalEvent(Signal signal, T value) : Event() {
-        this->signal = signal;
-        this->value = value;
-    }
+struct SignalEvent : public Event<SignalEvent<T>, bool(T), Signal> {
+    using Event<SignalEvent<T>, bool(T), Signal>::Event;
 };
+
 
 class C4Button : public CCMenuItemSpriteExtra {
 protected:
@@ -223,7 +218,7 @@ protected:
     bool init(const char* name);
     // on toggle
     void onToggle(CCObject* sender) {
-        SignalEvent(Signal::Mode, this->getTag()).post();
+        SignalEvent<int>(Signal::Mode).send(this->getTag());
     }
 public:
     // toggle
@@ -270,11 +265,11 @@ protected:
         if (type) {
             this->index = (index + (sender->getTag() == 2 ? 4 : 2)) % 3;
             m_label->setString(gradtypes[this->index]);
-            SignalEvent(Signal::GradType, this->index).post();
+            SignalEvent<int>(Signal::GradType).send(this->index);
         } else {
             this->index = (index + (sender->getTag() == 2 ? 7 : 5)) % 6;
             m_label->setString(followeds[this->index]);
-            SignalEvent(Signal::Follower, this->index).post();
+            SignalEvent<int>(Signal::Follower).send(this->index);
         }
     }
 public:
@@ -299,7 +294,7 @@ public:
     }
 };
 
-class ColorCell : public SetupCell, public ColorPickPopupDelegate {
+class ColorCell : public SetupCell, public ColorPickerDelegate {
 protected:
     // node
     C4Button* m_btn;
@@ -308,13 +303,11 @@ protected:
     // on button
     void onButton(CCObject* sender) {
         auto popup = ColorPickPopup::create(m_btn->getValue());
-        popup->setDelegate(this);
+        popup->setCallback([this](ccColor4B const& color) {
+            this->m_btn->setValue(color);
+            SignalEvent<ccColor4B>(Signal::Color).send(color);            
+        });
         popup->show();
-    }
-    // set current index
-    void updateColor(ccColor4B const& color) override {
-        this->m_btn->setValue(color);
-        SignalEvent(Signal::Color, color).post();
     }
 public:
     void setVal(BarColor const& setup) override {
@@ -365,7 +358,7 @@ public:
     }
 };
 
-class MultiColorCell : public SetupCell, public ColorPickPopupDelegate {
+class MultiColorCell : public SetupCell {
 protected:
     // which
     bool hd;
@@ -378,13 +371,11 @@ protected:
     void onButton(CCObject* sender) {
         this->hd = sender->getTag() == 2;
         auto popup = ColorPickPopup::create(( this->hd ? m_btnHdrd : m_btnZero)->getValue());
-        popup->setDelegate(this);
+        popup->setCallback([this](ccColor4B const& color) {
+            (this->hd ? m_btnHdrd : m_btnZero)->setValue(color);
+            SignalEvent<ccColor4B>(this->hd ? Signal::Hdrd : Signal::Zero).send(color);            
+        });
         popup->show();
-    }
-    // set current index
-    void updateColor(ccColor4B const& color) override {
-        (this->hd ? m_btnHdrd : m_btnZero)->setValue(color);
-        SignalEvent(this->hd ? Signal::Hdrd : Signal::Zero, color).post();
     }
 public:
     void setVal(BarColor const& setup) override {
@@ -413,7 +404,7 @@ protected:
     bool init(bool randa);
     // on toggle
     void onToggle(CCObject* sender) {
-        SignalEvent(this->randa ? Signal::RandA : Signal::Async, !m_toggler->isToggled()).post();
+        SignalEvent<bool>(this->randa ? Signal::RandA : Signal::Async).send(!m_toggler->isToggled());
     }
     void onDesc(CCObject* sender) {
         if (this->randa)
@@ -448,7 +439,7 @@ protected:
     bool init(bool frag);
     // on toggle
     void textChanged(CCTextInputNode* p) override {
-        SignalEvent(this->frag ? Signal::Frag : Signal::Vert, p->getString()).post();
+        SignalEvent<std::string>(this->frag ? Signal::Frag : Signal::Vert).send(p->getString());
     }
 public:
     // toggle
@@ -584,53 +575,127 @@ protected:
     std::vector<SliderInputCell*> speeds;
     std::vector<SliderInputCell*> phases;
 
-    EventListener<EventFilter<SignalEvent<bool>>> listenerBool
-        = EventListener<EventFilter<SignalEvent<bool>>>(
-            [this] (SignalEvent<bool>* event) -> ListenerResult {
-               return this->handleBoolSignal(event);
-            });
+    ListenerHandle radioSlider = SignalEvent<bool>(Signal::Slider).listen([this] (bool value) {
+        this->drag_slider = value;
+        return ListenerResult::Stop;
+    });
 
-    EventListener<EventFilter<SignalEvent<int>>> listenerInt
-        = EventListener<EventFilter<SignalEvent<int>>>(
-            [this] (SignalEvent<int>* event) -> ListenerResult {
-                return this->handleIntSignal(event);
-            });
+    ListenerHandle radioAsync = SignalEvent<bool>(Signal::Async).listen([this] (bool value) {
+        this->m_currentConfig.async = value;
+        // sync async togglers elsewhere
+        for (auto line : asyncs)
+            if (line->getTag() != (int)m_currentConfig.mode)
+                line->setVal(m_currentConfig);
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
 
-    EventListener<EventFilter<SignalEvent<float>>> listenerFloat
-        = EventListener<EventFilter<SignalEvent<float>>>(
-            [this] (SignalEvent<float>* event) -> ListenerResult {
-                return this->handleFloatSignal(event);
-            });
+    ListenerHandle radioRandA = SignalEvent<bool>(Signal::RandA).listen([this] (bool value) {
+        this->m_currentConfig.randa = value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
 
-    EventListener<EventFilter<SignalEvent<std::string>>> listenerString
-        = EventListener<EventFilter<SignalEvent<std::string>>>(
-            [this] (SignalEvent<std::string>* event) -> ListenerResult {
-                return this->handleStringSignal(event);
-            });
+    ListenerHandle radioMode = SignalEvent<int>(Signal::Mode).listen([this] (int value) {
+        this->switchMode(Mode(value));
+        return ListenerResult::Stop;
+    });
 
-    EventListener<EventFilter<SignalEvent<ccColor4B>>> listenerColor
-        = EventListener<EventFilter<SignalEvent<ccColor4B>>>(
-            [this] (SignalEvent<ccColor4B>* event) -> ListenerResult {
-                return this->handleColorSignal(event);
-            });
+    ListenerHandle radioFollower = SignalEvent<int>(Signal::Follower).listen([this] (int value) {
+        this->m_currentConfig.follower = value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
 
-    // handle bool signal
-    ListenerResult handleBoolSignal(SignalEvent<bool>* event);
+    ListenerHandle radioGradType = SignalEvent<int>(Signal::GradType).listen([this] (int value) {
+        this->m_currentConfig.gradType = GradType(value);
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
 
-    // handle int signal
-    ListenerResult handleIntSignal(SignalEvent<int>* event);
+    ListenerHandle radioSpeed = SignalEvent<float>(Signal::Speed).listen([this] (int value) {
+        this->m_currentConfig.speed = value;
+        for (auto line : speeds)
+            if (line->getTag() != (int)m_currentConfig.mode)
+                line->setVal(m_currentConfig);
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
 
-    // handle float signal
-    ListenerResult handleFloatSignal(SignalEvent<float>* event);
+    ListenerHandle radioLength = SignalEvent<float>(Signal::Length).listen([this] (float value) {
+        this->m_currentConfig.length = value;
+        this->m_previewBar->updateUniform("freq", value);
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
 
-    // handle string signal
-    ListenerResult handleStringSignal(SignalEvent<std::string>* event);
+    ListenerHandle radioPhase = SignalEvent<float>(Signal::Phase).listen([this] (float value) {
+        this->m_currentConfig.phase = (int)value;
+        for (auto line : phases)
+            if (line->getTag() != (int)m_currentConfig.mode)
+                line->setVal(m_currentConfig);
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
 
-    // handle color signal
-    ListenerResult handleColorSignal(SignalEvent<ccColor4B>* event);
+    ListenerHandle radioSatu = SignalEvent<float>(Signal::Satu).listen([this] (float value) {
+        this->m_currentConfig.satu = (int)value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
+
+    ListenerHandle radioBrit = SignalEvent<float>(Signal::Brit).listen([this] (float value) {
+        this->m_currentConfig.brit = (int)value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
+
+    ListenerHandle radioVert = SignalEvent<std::string>(Signal::Vert).listen([this] (std::string value) {
+        this->m_currentConfig.vert = value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
+
+    ListenerHandle radioFrag = SignalEvent<std::string>(Signal::Frag).listen([this] (std::string value) {
+        this->m_currentConfig.frag = value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
+
+    ListenerHandle radioColor = SignalEvent<ccColor4B>(Signal::Color).listen([this] (ccColor4B value) {
+        this->m_currentConfig.color = value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
+
+    ListenerHandle radioZero = SignalEvent<ccColor4B>(Signal::Zero).listen([this] (ccColor4B value) {
+        this->m_currentConfig.colorZero = value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
+
+    ListenerHandle radioHdrd = SignalEvent<ccColor4B>(Signal::Hdrd).listen([this] (ccColor4B value) {
+        this->m_currentConfig.colorHdrd = value;
+        Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
+        this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
+        return ListenerResult::Stop;
+    });
 
     // rewrite setup ui
-    bool setup() override;
+    bool init() override;
 
     // initialize menu status in the right
     void initialize();
@@ -654,7 +719,7 @@ public:
     // create
     static AdvancedMenu* create() {
         auto ret = new AdvancedMenu();
-        if (ret && ret->initAnchored(420.f, 280.f)) {
+        if (ret && ret->init()) {
             ret->autorelease();
             return ret;
         }
