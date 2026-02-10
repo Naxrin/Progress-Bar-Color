@@ -261,13 +261,15 @@ int refer_follow(std::string val) {
     return 0;
 }
 
+$execute {
+    // Register setting
+    (void)Mod::get()->registerCustomSettingType("advanced-option", &AdvancedSetting::parse);	
+}
+
 $on_mod(Loaded) {
     // port setttings to saved
     if (Mod::get()->setSavedValue("ported-3.6.0", true))
         return;
-
-    // Register setting
-    (void)Mod::get()->registerCustomSettingType("advanced-option", &AdvancedSetting::parse);
 
     auto set = Mod::get()->getSavedSettingsData();
 
