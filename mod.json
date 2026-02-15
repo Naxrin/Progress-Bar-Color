@@ -1,12 +1,12 @@
    {
-	"geode": "5.0.0-alpha.2",
+	"geode": "5.0.0-beta.1",
 	"gd":{
 		"win": "2.2081",
 		"android": "2.2081",
 		"mac": "2.2081",
 		"ios": "2.2081"
 	},
-	"version": "v4.7.1-beta.2",
+	"version": "v4.7.1",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
@@ -21,7 +21,7 @@
 	},
 	"dependencies": {
 		"geode.node-ids": {
-			"version": "v1.22.0-beta.1",
+			"version": "v1.22.0",
 			"importance": "required"
 		}
     },

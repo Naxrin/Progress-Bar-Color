@@ -1,3 +1,6 @@
+# 4.7.1
+- Bump version to stable geode
+
 # 4.7.1-beta.1
 - Bump version to Geode 5.x@GD2.2081
 - Less dependencies
