@@ -1,10 +1,6 @@
-#include "Geode/loader/Event.hpp"
-#include "ccTypes.h"
 #include "head.hpp"
 
 std::set<std::string> have_cache;
-
-
 
 bool C4Button::init(CCObject* target, SEL_MenuHandler callback) {
     this->spr = ColorChannelSprite::create();
