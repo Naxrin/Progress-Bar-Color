@@ -23,6 +23,8 @@ void refresh() {
 
 // load program
 CCGLProgram* get_prog(std::string key, bool adv = false, std::string vertfile = "", std::string fragfile = "") {
+	if (key == "preview" && Mod::get()->getSettingValue<bool>("no-preview"))
+		return nullptr;
 	std::string full = fmt::format("{}"_spr, key);
 	
 	if (have_cache.contains(key)) {

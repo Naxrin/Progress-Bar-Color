@@ -69,17 +69,6 @@ struct BarColor {
             && (speed == c.speed) && (satu == c.satu) && (brit == c.brit) && (length == c.length)
             && (randa == c.randa) && (vert == c.vert) && (frag == c.frag);
     }
-    /*
-    int shaderMode() const {
-        if (mode == Mode::Chromatic) return 3;
-        if (mode == Mode::Gradient) {
-            if (gradType == GradType::Space)
-                return 1;
-            if (gradType == GradType::Time)
-                return 2;
-        }
-        return 0;
-    }*/
 };
 
 // normal & quest

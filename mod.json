@@ -1,12 +1,12 @@
    {
-	"geode": "5.0.0-beta.3",
+	"geode": "5.0.0",
 	"gd":{
 		"win": "2.2081",
 		"android": "2.2081",
 		"mac": "2.2081",
 		"ios": "2.2081"
 	},
-	"version": "v4.7.1",
+	"version": "v4.7.2-alpha.1",
 	"id": "naxrin.progress_bar_color",
 	"name": "Progress Bar Color",
 	"developer": "Naxrin",
@@ -21,7 +21,7 @@
 	},
 	"dependencies": {
 		"geode.node-ids": {
-			"version": "v1.22.0",
+			"version": "v1.23.0",
 			"required": true
 		}
     },
@@ -52,6 +52,12 @@
 		"drop-bar-fix": {
 			"name": "No Platform Dropbar Progress",
 			"description": "Hide the meaningless progress bar in retry level dropbar for platform levels.",
+			"type": "bool",
+			"default": true
+		},
+		"no-preview": {
+			"name": "Disable Mod Menu Preview",
+			"description": "Keep this option ON or the mod menu is crash risky for now.",
 			"type": "bool",
 			"default": true
 		}

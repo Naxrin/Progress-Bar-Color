@@ -1,3 +1,6 @@
+# v4.7.2-alpha.1
+- Add an option that disable preview effects to avoid crash
+
 # 4.7.1
 - Bump version to stable geode
 

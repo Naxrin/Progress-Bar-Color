@@ -354,6 +354,7 @@ bool PreviewBar::init() {
 void PreviewBar::update(float dt) {
     this->delta = fmod(this->delta + dt * Mod::get()->getSettingValue<double>("speed"), 1);
     update_shader(this->target, this->config, this->program, dt, this->delta, this->deltac);
+    if (this->program)
     this->program->updateUniforms();
 }
 
@@ -631,7 +632,8 @@ bool AdvancedMenu::init() {
     this->m_previewBar = PreviewBar::create();
     m_previewBar->setPosition(ccp(240.f, 15.f + size.height / 2));
     m_previewBar->setID("preview-bar");
-    //m_previewBar->setVisible(false);
+    if (Mod::get()->getSettingValue<bool>("no-preview"))
+        m_previewBar->setVisible(false);
     m_mainLayer->addChild(m_previewBar);
 
     // hint
