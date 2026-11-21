@@ -110,7 +110,7 @@ bool SliderInputCell::init(Signal target, const char* text) {
     this->m_inputer->setScale(0.65f);
     this->m_inputer->setFilter(fmt::format("{}{}0123456789", target == Signal::Speed || target == Signal::Length ? "-" : "",
         target == Signal::Length || target == Signal::Speed ? "." : ""));
-    this->m_inputer->setDelegate(this);
+    this->m_inputer->setCallback([this](std::string const& value) { this->textChanged(value); });
     this->addChild(this->m_inputer);
 
     this->m_slider = Slider::create(this, menu_selector(SliderInputCell::onSlider));
@@ -160,28 +160,28 @@ void SliderInputCell::sliderEnded(Slider* p) {
     SignalEvent<bool>(Signal::Slider).send(false);
 }
 
-void SliderInputCell::textChanged(CCTextInputNode* p) {
+void SliderInputCell::textChanged(std::string const& text) {
     switch (this->target) {
     case Signal::Length:
-        this->val = numFromString<float>(p->getString()).unwrapOrDefault();
+        this->val = numFromString<float>(text).unwrapOrDefault();
         this->m_slider->setValue(val > 1 ? 1 : val < -1 ? 0 : (val + 1.f) / 2.f);
         break;
     case Signal::Speed:
-        this->val = numFromString<float>(p->getString()).unwrapOrDefault();
+        this->val = numFromString<float>(text).unwrapOrDefault();
         this->m_slider->setValue(val > 5 ? 1 : val < -5 ? 0 : (val + 5.f) / 10.f);
         break;
     case Signal::Phase:
-        this->val = numFromString<int>(p->getString()).unwrapOrDefault();
+        this->val = numFromString<int>(text).unwrapOrDefault();
         this->val = this->val > 360 ? 360 : this->val;
         this->m_slider->setValue(val / 360.f);
         break;
     case Signal::Satu:
-        this->val = numFromString<int>(p->getString()).unwrapOr(100);
+        this->val = numFromString<int>(text).unwrapOr(100);
         this->val = this->val > 100 ? 100 : this->val;
         this->m_slider->setValue(val / 100.f);
         break;
     case Signal::Brit:
-        this->val = numFromString<int>(p->getString()).unwrapOr(100);
+        this->val = numFromString<int>(text).unwrapOr(100);
         this->val = this->val > 100 ? 100 : this->val;
         this->m_slider->setValue(val / 100.f);
         break;
@@ -304,7 +304,7 @@ bool InputCell::init(bool frag) {
     //m_inputer->getInputNode()->getTextLabel()->setAnchorPoint(ccp(0.f, 0.5f));
     m_inputer->setScale(0.65f);
     m_inputer->setID("inputer");
-    m_inputer->setDelegate(this);
+    m_inputer->setCallback([this](std::string const& value) { this->textChanged(value); });
     //log::debug("filder = {} by default", m_inputer->getInputNode()->m_allowedChars);
     this->addChild(m_inputer);
 
@@ -327,6 +327,8 @@ bool PreviewBar::init() {
 
     // preview sprite
     this->base = CCSprite::create("GJ_progressBar_001.png");
+    if (!this->base)
+        return false;
     base->setScale(0.56f);
     this->size = base->getContentSize();
     this->setContentSize(size * 0.56);
@@ -337,6 +339,8 @@ bool PreviewBar::init() {
     this->addChild(base);
 
     this->target = CCSprite::create("GJ_progressBar_001.png");
+    if (!this->target)
+        return false;
     target->setAnchorPoint(ccp(0.f, 0.5f));
     target->setScale(0.992);
     target->setScaleY(0.860);
@@ -382,7 +386,9 @@ void PreviewBar::setProgress(float p) {
 }
 
 void PreviewBar::initShader(std::string advKey, std::string defKey, ccColor3B defCol) {
-    CC_SAFE_DELETE(this->program);
+    // do NOT delete the old program here: it is reference-counted and owned by
+    // CCShaderCache / the target sprite. Previous `CC_SAFE_DELETE` could double
+    // free it (and crashed on the first call since `program` was uninitialized).
     this->program = init_shader(this->target, advKey, defKey, "preview",
         this->config, defCol, this->progress);
     this->delta = 0;
@@ -418,6 +424,7 @@ bool AdvancedMenu::init() {
     // scroller
     auto scrollerItems = ScrollLayer::create(CCSize(150.f, 240.f));
     scrollerItems->setPosition(ccp(-35.f, 10.f));
+    scrollerItems->setAnchorPoint(ccp(0.f, 0.f));
     scrollerItems->setID("items-scroller");
     m_mainLayer->addChild(scrollerItems);
 
@@ -462,10 +469,13 @@ bool AdvancedMenu::init() {
 
     scrollerItems->m_contentLayer->setContentSize(CCSize(100.f, h - 3.f));
     m_menuItems->setContentSize(CCSize(100.f, h - 3.f));
+    // always start the tab list from the top
+    scrollerItems->moveToTop();
 
     // scroller setup
     this->m_scrollerSetup = ScrollLayer::create(CCSize(280.f, 180.f));
     m_scrollerSetup->setPosition(ccp(130.f, 45.f));
+    m_scrollerSetup->setAnchorPoint(ccp(0.f, 0.f));
     m_scrollerSetup->setID("setup-scroller");
     m_mainLayer->addChild(m_scrollerSetup);
 
@@ -630,10 +640,12 @@ bool AdvancedMenu::init() {
     // preview sprite
     // debug testing so set visible false
     this->m_previewBar = PreviewBar::create();
+    if (!m_previewBar) {
+        log::error("could not create the preview bar");
+        return false;
+    }
     m_previewBar->setPosition(ccp(240.f, 15.f + size.height / 2));
     m_previewBar->setID("preview-bar");
-    if (Mod::get()->getSettingValue<bool>("no-preview"))
-        m_previewBar->setVisible(false);
     m_mainLayer->addChild(m_previewBar);
 
     // hint
@@ -734,8 +746,9 @@ void AdvancedMenu::initialize() {
         node->setPositionY(Y);
     }
 
-    this->m_scrollerSetup->moveToTop();
+    // set the height first so moveToTop can use it
     this->m_scrollerSetup->m_contentLayer->setContentHeight(H);
+    this->m_scrollerSetup->moveToTop();
     // init the preview
     this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
 }

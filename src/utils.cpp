@@ -23,12 +23,9 @@ void refresh() {
 
 // load program
 CCGLProgram* get_prog(std::string key, bool adv = false, std::string vertfile = "", std::string fragfile = "") {
-	if (key == "preview" && Mod::get()->getSettingValue<bool>("no-preview"))
-		return nullptr;
 	std::string full = fmt::format("{}"_spr, key);
-	
+
 	if (have_cache.contains(key)) {
-		// preview not allowed
 		if (!AdvancedMenu::get() && (!adv || !Mod::get()->getSettingValue<bool>("reload")))
 			if (auto program = shch->programForKey(full.c_str())) {
 				log::debug("program {} is already in index", full.c_str());
@@ -69,8 +66,19 @@ CCGLProgram* get_prog(std::string key, bool adv = false, std::string vertfile = 
 	}
 
 	CCShaderCache::sharedShaderCache()->addProgram(program, full.c_str());
+	// the shader cache retains it; drop the reference we got from `new` so
+	// replaced programs can actually be freed instead of leaking
+	program->release();
 	log::debug("shader for {} create successfully!", key);
 	return program;
+}
+
+// ping-pong wave over one full phase cycle: 0 -> 1 -> 0
+static float trianglePhase(float t) {
+	t = std::fmod(t, 1.f);
+	if (t < 0.f)
+		t += 1.f;
+	return 1.f - std::abs(2.f * t - 1.f);
 }
 
 CCGLProgram* init_shader(
@@ -80,7 +88,9 @@ CCGLProgram* init_shader(
 	if (!target)
 		return nullptr;
 
-	target->m_sBlendFunc = {GL_SRC_ALPHA, GL_ONE};
+	// use the default premultiplied-alpha blend func that cocos sprites use;
+	// additive blending made the bars look translucent over the game background
+	target->m_sBlendFunc = {GL_ONE, GL_ONE_MINUS_SRC_ALPHA};
 		
 	auto key = inCommon ? defKey + "-default" : advKey;
 	// reference
@@ -180,7 +190,7 @@ CCGLProgram* init_shader(
 			break;
 		case GradType::Time:
             prog->setUniformLocationWith1i(prog->getUniformLocationForName("mode"), 2);
-			prog->setUniformLocationWith1f(prog->getUniformLocationForName("phase"), 1.0 - abs(config.phase / 180.f - 1.0));
+			prog->setUniformLocationWith1f(prog->getUniformLocationForName("phase"), trianglePhase(config.phase / 360.f));
 			break;
 		default:
 			break;
@@ -238,7 +248,8 @@ void update_shader(
 	else if (config.mode == Mode::Chromatic)
 		prog->setUniformLocationWith1f(prog->getUniformLocationForName("phase"), config.phase / 360.f + phase);
 	else if (config.mode == Mode::Gradient && config.gradType == GradType::Time)
-		prog->setUniformLocationWith1f(prog->getUniformLocationForName("phase"), 1.0 - abs(config.phase / 180.f + phase * 2 - 1.0));
+		// wrap first, then make a triangle wave: colorl -> colorr -> colorl
+		prog->setUniformLocationWith1f(prog->getUniformLocationForName("phase"), trianglePhase(config.phase / 360.f + phase));
 
 	prog->updateUniforms();
 }

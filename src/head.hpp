@@ -314,7 +314,7 @@ public:
 };
 
 // linear slider input bundle
-class SliderInputCell : public SetupCell, public TextInputDelegate, public SliderDelegate {
+class SliderInputCell : public SetupCell, public SliderDelegate {
 protected:
     // value
     float val;
@@ -329,7 +329,7 @@ protected:
     // on slider
     void onSlider(CCObject* sender);
     // text changed override
-    void textChanged(CCTextInputNode* p) override;
+    void textChanged(std::string const& text);
     // slider began
     void sliderBegan(Slider* p) override;
     // slider ended
@@ -418,7 +418,7 @@ public:
 };
 
 // shader file name
-class InputCell : public SetupCell, public TextInputDelegate {
+class InputCell : public SetupCell {
 protected:
     // false = vert
     bool frag;
@@ -427,8 +427,8 @@ protected:
     // init
     bool init(bool frag);
     // on toggle
-    void textChanged(CCTextInputNode* p) override {
-        SignalEvent<std::string>(this->frag ? Signal::Frag : Signal::Vert).send(p->getString());
+    void textChanged(std::string const& text) {
+        SignalEvent<std::string>(this->frag ? Signal::Frag : Signal::Vert).send(text);
     }
 public:
     // toggle
@@ -470,13 +470,13 @@ void refresh();
 class PreviewBar : public CCLayer {
 protected:
     // progress simulator
-    float progress;
+    float progress = 100.f;
     // max target size
     CCSize size;
     // phase
-    float delta, deltac;
+    float delta = 0.f, deltac = 0.f;
     // the bar taken effect on
-    CCSprite* base, * target;
+    CCSprite* base = nullptr, * target = nullptr;
     // init
     bool init() override;
     // update
@@ -486,27 +486,39 @@ protected:
     // move touch to update progress
     void ccTouchMoved(CCTouch *touch, CCEvent* event) override;
     // set progress
-    void setProgress(float p);    
+    void setProgress(float p);
 public:
-    BarColor config;
+    BarColor config{};
     // target program
-    CCGLProgram* program;
+    CCGLProgram* program = nullptr;
     // update a uniform
     void updateUniform(const char* name, int val) {
+        if (!this->program)
+            return;
+        this->program->use();
         this->program->setUniformLocationWith1i(this->program->getUniformLocationForName(name), val);
         this->program->updateUniforms();
     }
 
     void updateUniform(const char* name, float val) {
+        if (!this->program)
+            return;
+        this->program->use();
         this->program->setUniformLocationWith1f(this->program->getUniformLocationForName(name), val);
         this->program->updateUniforms();
     }
 
     void updateUniform(const char* name, ccColor3B val) {
+        if (!this->program)
+            return;
+        this->program->use();
         this->program->setUniformLocationWith3f(this->program->getUniformLocationForName(name), val.r / 255.f, val.g / 255.f, val.b / 255.f);
         this->program->updateUniforms();
     }
     void updateUniform(const char* name, ccColor4B val) {
+        if (!this->program)
+            return;
+        this->program->use();
         this->program->setUniformLocationWith4f(this->program->getUniformLocationForName(name), val.r / 255.f, val.g / 255.f, val.b / 255.f, val.a / 255.f);
         this->program->updateUniforms();
     }
@@ -606,7 +618,7 @@ protected:
         return ListenerResult::Stop;
     });
 
-    ListenerHandle radioSpeed = SignalEvent<float>(Signal::Speed).listen([this] (int value) {
+    ListenerHandle radioSpeed = SignalEvent<float>(Signal::Speed).listen([this] (float value) {
         this->m_currentConfig.speed = value;
         for (auto line : speeds)
             if (line->getTag() != (int)m_currentConfig.mode)
@@ -618,7 +630,7 @@ protected:
 
     ListenerHandle radioLength = SignalEvent<float>(Signal::Length).listen([this] (float value) {
         this->m_currentConfig.length = value;
-        this->m_previewBar->updateUniform("freq", value);
+        // initShader below re-creates the program and sets all uniforms
         Mod::get()->setSavedValue(tabs[m_tab], m_currentConfig);
         this->m_previewBar->initShader(tabs[m_tab], this->defKey, this->defColor);
         return ListenerResult::Stop;
@@ -745,37 +757,57 @@ public:
 
 class AdvancedSettingNode : public SettingNodeV3 {
 protected:
-    ButtonSprite* m_buttonSprite;
-    CCMenuItemSpriteExtra* m_button;
+    ButtonSprite* m_buttonSprite = nullptr;
+    Button* m_button = nullptr;
 
     bool init(std::shared_ptr<AdvancedSetting> setting, float width) {
         if (!SettingNodeV3::init(setting, width))
             return false;
-        
+
         m_buttonSprite = ButtonSprite::create("Config", "goldFont.fnt", "GJ_button_01.png", .8f);
         m_buttonSprite->setScale(.6f);
-        m_button = CCMenuItemSpriteExtra::create(
-            m_buttonSprite, this, menu_selector(AdvancedSettingNode::onButton)
-        );
+
+        // Geode 6 fix
+        m_button = Button::createWithNode(m_buttonSprite, [this](Button*) {
+            this->onButton(nullptr);
+        });
+        m_button->setID("mod-options-button");
         this->getButtonMenu()->addChildAtPosition(m_button, Anchor::Center);
         this->getButtonMenu()->setContentWidth(60);
         this->getButtonMenu()->updateLayout();
 
         this->updateState(nullptr);
-        
+
         return true;
     }
     void updateState(CCNode* invoker) override {
         SettingNodeV3::updateState(invoker);
-        auto shouldEnable = this->getSetting()->shouldEnable();
+
+        if (!m_button)
+            return;
+
+        auto setting = this->getSetting();
+        bool shouldEnable = !setting || setting->shouldEnable();
         m_button->setEnabled(shouldEnable);
-        m_buttonSprite->setCascadeColorEnabled(true);
-        m_buttonSprite->setCascadeOpacityEnabled(true);
-        m_buttonSprite->setOpacity(shouldEnable ? 255 : 155);
-        m_buttonSprite->setColor(shouldEnable ? ccWHITE : ccGRAY);
+        if (m_buttonSprite) {
+            m_buttonSprite->setCascadeColorEnabled(true);
+            m_buttonSprite->setCascadeOpacityEnabled(true);
+            m_buttonSprite->setOpacity(shouldEnable ? 255 : 155);
+            m_buttonSprite->setColor(shouldEnable ? ccWHITE : ccGRAY);
+        }
     }
     void onButton(CCObject*) {
-        AdvancedMenu::create()->show();
+        log::debug("opening the advanced options menu");
+        if (auto menu = AdvancedMenu::create()) {
+            menu->show();
+        } else {
+            log::error("could not create the advanced options menu");
+            FLAlertLayer::create(
+                "Progress Bar Color",
+                "Failed to open the <cy>advanced options</c> menu. Please report this with your log.",
+                "OK"
+            )->show();
+        }
     }
     void onCommit() override {}
     void onResetToDefault() override {}

@@ -1,5 +1,11 @@
-# v4.7.2-alpha.1
-- Add an option that disable preview effects to avoid crash
+# 5.7.2
+- Port to Geode 6.0.0-beta.1
+- Fix progress bars rendering translucent (wrong blend function)
+- Fix crash when opening the config menu preview
+- Fix Chromatic speed being rounded to int values
+- Fix Time gradient jumping instead of cycling both ways
+- Fix config menu scroll layers issue
+- Makes chromatic rainbow looks just better
 
 # 4.7.1
 - Bump version to stable geode

@@ -5,11 +5,17 @@ using namespace geode::prelude;
 #include <Geode/modify/PauseLayer.hpp>
 class $modify(MyPauseLayer, PauseLayer) {
 	struct Fields {
-		float delta, delta1, delta2;
-		bool plat, bp_loaded;
-		CCNode* nb, * pb;
-		CCGLProgram* ng, * pg, * nbg, * pbg;
-		BarColor nc, pc;
+		float delta = 0.f, delta1 = 0.f, delta2 = 0.f, delta3 = 0.f;
+		bool plat = false;
+		// pre-2.2 layout: separate normal / practice bar fills
+		CCSprite* nb = nullptr, * pb = nullptr;
+		CCGLProgram* ng = nullptr, * pg = nullptr;
+		BarColor nc{}, pc{};
+		// 2.2+ layout: only the current run fill is customized; the best run
+		// indicator is left untouched so it keeps the game's default look
+		CCSprite* current = nullptr;
+		CCGLProgram* currentg = nullptr;
+		BarColor cc{};
 	};
 
 	static void onModify(auto& self) {
@@ -21,35 +27,55 @@ class $modify(MyPauseLayer, PauseLayer) {
 		PauseLayer::customSetup();
 		refresh();
 
-		auto level = PlayLayer::get()->m_level;
+		auto pl = PlayLayer::get();
+		if (!pl || !pl->m_level)
+			return;
+
+		auto level = pl->m_level;
 		m_fields->plat = level->isPlatformer();
-		int progress = level->m_normalPercent.value();
 		if (m_fields->plat)
 			return;
-			
-		auto bp = Loader::get()->getLoadedMod("tpdea.betterpause-better");
-		if (bp && bp->getSettingValue<int64_t>("type-pause") == 1) {
-			m_fields->bp_loaded = true;
-			log::warn("betterpause loaded");
-			if (auto node = this->getChildByID("better-pause-node")) {
-				log::warn("bp node found");
-				m_fields->nb = node->getChildByID("normal-bar");
-				m_fields->ng = init_shader(m_fields->nb->getChildByType<CCSprite>(1), "pause-menu-normal", "normal", "pause-menu-normal", m_fields->nc, defCol1, progress, true);
-				m_fields->nbg = init_shader(m_fields->nb->getChildByType<CCSprite>(2), "pause-menu-normal", "normal", "pause-menu-normal-current", m_fields->nc, defCol1, progress, true);
 
-				m_fields->pb = node->getChildByID("practice-bar");
-				m_fields->pg = init_shader(m_fields->pb->getChildByType<CCSprite>(1), "pause-menu-practice", "practice", "pause-menu-practice", m_fields->pc, defCol2, progress, true);
-				m_fields->pbg = init_shader(m_fields->pb->getChildByType<CCSprite>(2), "pause-menu-practice", "practice", "pause-menu-practice-current", m_fields->pc, defCol2, progress, true);
-			}
+		// GD 2.2+ puts all pause menu content into a "main-layer" child, and
+		// node-ids assigns the progress bar IDs on that layer. Fall back to
+		// the layer itself in case the ID is missing.
+		auto root = this->getChildByID("main-layer");
+		if (!root)
+			root = this;
+
+		// old layout (Legacy Pause Progress): separate normal / practice bars
+		if (auto bar = root->getChildByID("normal-progress-bar")) {
+			m_fields->nb = bar->getChildByType<CCSprite>(0);
+			m_fields->ng = init_shader(
+				m_fields->nb, "pause-menu-normal", "normal", "pause-menu-normal",
+				m_fields->nc, defCol1, level->m_normalPercent.value()
+			);
 		}
-		else {
-			// nodes
-			m_fields->nb = this->getChildByID("normal-progress-bar");
-			m_fields->pb = this->getChildByID("practice-progress-bar");
+		if (auto bar = root->getChildByID("practice-progress-bar")) {
+			m_fields->pb = bar->getChildByType<CCSprite>(0);
+			m_fields->pg = init_shader(
+				m_fields->pb, "pause-menu-practice", "practice", "pause-menu-practice",
+				m_fields->pc, defCol2, level->m_practicePercent
+			);
+		}
 
-			// paint
-			m_fields->ng = init_shader(m_fields->nb->getChildByType<CCSprite>(0), "pause-menu-normal", "normal", "pause-menu-normal", m_fields->nc, defCol1, progress, true);
-			m_fields->pg = init_shader(m_fields->pb->getChildByType<CCSprite>(0), "pause-menu-practice", "practice", "pause-menu-practice", m_fields->pc, defCol2, progress, true);
+		// new layout: a single bar showing the best run and the current run
+		if (auto bar = root->getChildByID("progress-bar")) {
+			bool practice = pl->m_isPracticeMode;
+			auto advKey = practice ? "pause-menu-practice" : "pause-menu-normal";
+			auto defKey = practice ? "practice" : "normal";
+			auto defCol = practice ? defCol2 : defCol1;
+
+			m_fields->current = typeinfo_cast<CCSprite*>(bar->getChildByID("current-bar"));
+			if (!m_fields->current)
+				m_fields->current = bar->getChildByType<CCSprite>(1);
+
+			// best-bar is deliberately skipped: it should keep the game's
+			// default gray "best progress" appearance
+			m_fields->currentg = init_shader(
+				m_fields->current, advKey, defKey, "pause-menu-current",
+				m_fields->cc, defCol, pl->getCurrentPercentInt()
+			);
 		}
 
 		schedule(schedule_selector(MyPauseLayer::dynamic));
@@ -60,55 +86,145 @@ class $modify(MyPauseLayer, PauseLayer) {
 
 		m_fields->delta = fmod(m_fields->delta + dt * Mod::get()->getSettingValue<float>("speed"), 1);
 
-		if (m_fields->bp_loaded) {
-			if (auto node = this->getChildByID("better-pause-node")) {
-				update_shader(m_fields->nb->getChildByType<CCSprite>(1), m_fields->nc, m_fields->ng, dt, m_fields->delta, m_fields->delta1);
-				update_shader(m_fields->nb->getChildByType<CCSprite>(2), m_fields->nc, m_fields->nbg, dt, m_fields->delta, m_fields->delta1);
-
-				update_shader(m_fields->pb->getChildByType<CCSprite>(1), m_fields->pc, m_fields->pg, dt, m_fields->delta, m_fields->delta2);
-				update_shader(m_fields->pb->getChildByType<CCSprite>(2), m_fields->pc, m_fields->pbg, dt, m_fields->delta, m_fields->delta2);
-			}
-		}
-		else {
-			update_shader(m_fields->nb->getChildByType<CCSprite>(0), m_fields->nc, m_fields->ng, dt, m_fields->delta, m_fields->delta1);
-			update_shader(m_fields->pb->getChildByType<CCSprite>(0), m_fields->pc, m_fields->pg, dt, m_fields->delta, m_fields->delta2);
-		}
+		if (m_fields->ng)
+			update_shader(m_fields->nb, m_fields->nc, m_fields->ng, dt, m_fields->delta, m_fields->delta1);
+		if (m_fields->pg)
+			update_shader(m_fields->pb, m_fields->pc, m_fields->pg, dt, m_fields->delta, m_fields->delta2);
+		if (m_fields->currentg)
+			update_shader(m_fields->current, m_fields->cc, m_fields->currentg, dt, m_fields->delta, m_fields->delta3);
 	}
 };
 
 #include <Geode/modify/LevelInfoLayer.hpp>
 class $modify(MyLevelInfoLayer, LevelInfoLayer) {
 	struct Fields {
-		float delta, delta1, delta2;
-		CCSprite* nb, * pb;
-		CCGLProgram* ng, * pg;
-		BarColor nc, pc;
+		bool plat = false;
+		bool scheduled = false;
+		float delta = 0.f, delta1 = 0.f, delta2 = 0.f;
+		// the painted bar fills; retained so the pointers stay valid even when
+		// the layer (or another mod) rebuilds the layout later on
+		CCSprite* nb = nullptr, * pb = nullptr;
+		CCGLProgram* ng = nullptr, * pg = nullptr;
+		BarColor nc{}, pc{};
+
+		~Fields() {
+			if (nb)
+				nb->release();
+			if (pb)
+				pb->release();
+		}
 	};
+
+	static void onModify(auto& self) {
+		// The bar IDs come from node-ids' `setupProgressBars` hook and are
+		// only valid around that call: the nodes may be moved around or
+		// re-identified by the rest of `init`. Grab them right afterwards.
+		(void) self.setHookPriority("LevelInfoLayer::setupProgressBars", Priority::Early);
+	}
 
 	bool init(GJGameLevel* level, bool p) {
 		if (!LevelInfoLayer::init(level, p))
 			return false;
-		if (level->isPlatformer())
+		if (!level)
 			return true;
-			
-		refresh();
-		// nodes
-		m_fields->nb = this->getChildByID("normal-mode-bar")->getChildByType<CCSprite>(0);
-		m_fields->pb = this->getChildByID("practice-mode-bar")->getChildByType<CCSprite>(0);
-		// paint
-		m_fields->ng = init_shader(m_fields->nb, "info-menu-normal", "normal", "info-menu-normal", m_fields->nc, defCol1, level->m_normalPercent.value());
-		m_fields->pg = init_shader(m_fields->pb, "info-menu-practice", "practice", "info-menu-practice", m_fields->pc, defCol2, level->m_practicePercent);
-		
-		schedule(schedule_selector(MyLevelInfoLayer::dynamic));
+
+		m_fields->plat = level->isPlatformer();
+		if (m_fields->plat)
+			return true;
+
+		// Normally already done by the setupProgressBars hook; retried here in
+		// case the layer was built without (or before) the progress bars.
+		this->paintBars(level);
+		this->startPainting();
 		return true;
 	}
-	void dynamic(float dt) {
-		if (this->m_level->isPlatformer())
+
+	// the only place where the two progress bars are created
+	void setupProgressBars() {
+		LevelInfoLayer::setupProgressBars();
+
+		auto level = m_level;
+		if (!level || level->isPlatformer())
 			return;
+
+		m_fields->plat = false;
+		this->paintBars(level);
+		this->startPainting();
+	}
+
+	void dynamic(float dt) {
+		if (m_fields->plat || !m_level || m_level->isPlatformer())
+			return;
+
 		m_fields->delta = fmod(m_fields->delta + dt * Mod::get()->getSettingValue<float>("speed"), 1);
-		//log::debug("phase = {}", m_fields->delta);
-		update_shader(m_fields->nb, m_fields->nc, m_fields->ng, dt, m_fields->delta, m_fields->delta1);
-		update_shader(m_fields->pb, m_fields->pc, m_fields->pg, dt, m_fields->delta, m_fields->delta2);
+
+		if (m_fields->ng)
+			update_shader(m_fields->nb, m_fields->nc, m_fields->ng, dt, m_fields->delta, m_fields->delta1);
+		if (m_fields->pg)
+			update_shader(m_fields->pb, m_fields->pc, m_fields->pg, dt, m_fields->delta, m_fields->delta2);
+	}
+
+private:
+	void startPainting() {
+		if (m_fields->scheduled || (!m_fields->ng && !m_fields->pg))
+			return;
+		m_fields->scheduled = true;
+		schedule(schedule_selector(MyLevelInfoLayer::dynamic));
+	}
+
+	void holdBar(CCSprite*& slot, CCSprite* fill) {
+		if (slot == fill)
+			return;
+		if (slot)
+			slot->release();
+		slot = fill;
+		if (slot)
+			slot->retain();
+	}
+
+	// safe lookup: the node IDs are provided by node-ids and are not
+	// guaranteed to exist (missing dependency, different node layout...)
+	static CCSprite* findBarFill(CCNode* root, const char* id) {
+		CCNode* bar = root->getChildByID(id);
+		if (!bar)
+			bar = root->getChildByIDRecursive(id);
+		if (!bar) {
+			log::warn("LevelInfoLayer: no \"{}\" node found ({} children), skipping", id, root->getChildrenCount());
+			return nullptr;
+		}
+		auto fill = bar->getChildByType<CCSprite>(0);
+		if (!fill)
+			log::warn("LevelInfoLayer: \"{}\" has no fill sprite, skipping", id);
+		return fill;
+	}
+
+	void paintBars(GJGameLevel* level) {
+		if (!level || this->m_challenge)
+			return;
+
+		refresh();
+
+		// look the bars up again every time: `setupProgressBars` gives us the
+		// freshest nodes, and the retry from `init` catches layers whose bars
+		// (or node IDs) only appeared after that call
+		if (auto fill = findBarFill(this, "normal-mode-bar")) {
+			if (fill != m_fields->nb || !m_fields->ng) {
+				holdBar(m_fields->nb, fill);
+				m_fields->ng = init_shader(
+					fill, "info-menu-normal", "normal", "info-menu-normal",
+					m_fields->nc, defCol1, level->m_normalPercent.value()
+				);
+			}
+		}
+		if (auto fill = findBarFill(this, "practice-mode-bar")) {
+			if (fill != m_fields->pb || !m_fields->pg) {
+				holdBar(m_fields->pb, fill);
+				m_fields->pg = init_shader(
+					fill, "info-menu-practice", "practice", "info-menu-practice",
+					m_fields->pc, defCol2, level->m_practicePercent
+				);
+			}
+		}
 	}
 };
 
@@ -327,23 +443,27 @@ class $modify(DynamicLevelListLayer, LevelListLayer){
 			
 		//log::error("claimed = {}", GameStatsManager::sharedState()->hasClaimedListReward(m_levelList));
 		// hide diamond icon
-		this->getChildByID("small-diamonds-icon")->setVisible(false);
+		if (auto icon = this->getChildByID("small-diamonds-icon"))
+			icon->setVisible(false);
 
 		auto goal = m_levelList->m_levels.size();
 		auto progress = goal ? 100.f * m_levelList->completedLevels() / goal : 0;
 		if (progress > 100)
 			progress = 100;
 		// set text label
-		static_cast<CCLabelBMFont*>(this->getChildByID("progress-bar-label"))->setString(
-			fmt::format("{}/{}", m_levelList->completedLevels(), goal).c_str());
+		if (auto label = typeinfo_cast<CCLabelBMFont*>(this->getChildByID("progress-bar-label")))
+			label->setString(
+				fmt::format("{}/{}", m_levelList->completedLevels(), goal).c_str());
 
 		// set progress bar status
 		if (auto bar = this->getChildByID("progress-bar")) {
 			auto s = bar->getContentSize();
-			m_fields->bar->setTextureRect(CCRect(0, 0, s.width * progress / 100, s.height));
-			
-			// paint double default manually
-			m_fields->prog = init_shader(m_fields->bar, "list-page-done", "list-done", "list-page-done", m_fields->c, defCol4, progress);
+			if (m_fields->bar) {
+				m_fields->bar->setTextureRect(CCRect(0, 0, s.width * progress / 100, s.height));
+
+				// paint double default manually
+				m_fields->prog = init_shader(m_fields->bar, "list-page-done", "list-done", "list-page-done", m_fields->c, defCol4, progress);
+			}
 		}
 	}
 
