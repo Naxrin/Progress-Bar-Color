@@ -514,11 +514,3 @@ class $modify(DynamicListCell, LevelListCell) {
 		update_shader(m_fields->bar,  m_fields->c, m_fields->prog, dt, m_fields->delta, m_fields->deltac);
 	}
 };
-
-// Register setting
-
-$execute {
-    //(void)Mod::get()->registerCustomSettingType("advanced-option", &AdvancedSetting::parse);
-
-	//shch->addProgram();
-}

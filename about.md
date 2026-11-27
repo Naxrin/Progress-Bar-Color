@@ -32,16 +32,15 @@ Now that the other six modes are only a set of introduction of what this mod sup
 - **main** = your main player sprite color
 - **second** = your second player sprite color
 - **glow** = your main player glow outline color
-- **main2** = your main player sprite color (p2 main color if SDI loaded)
-- **second2** = your second player sprite color (p2 second color if SDI loaded)
-- **glow2** = your main player glow outline color (p2 glow color if SDI loaded)
-  
-SDI = Separate Dual Icons by Weebify.  
-  
-Obviously I can't introduce how to code a cool shader as expected for you here, if you need help in shader coding, go ask our Deepseek / ChatGPT / Gemini friend or someone else...  
+- **main2** = your p2 main player sprite color if SDI loaded (vanilla main color elsewise)
+- **second2** = your p2 secondary player sprite color if SDI loaded (vanilla secondary color elsewise)
+- **glow2** = your p2 glow player sprite color if SDI loaded (vanilla glow color elsewise)
+Note that:
+- SDI = Separate Dual Icons by Weebify.  
+- By saying player colors they're only related with game settings in garage menu and will no sense get affected by other mods (chroma icons, etc)
+- Obviously I can't introduce how to code a cool shader as expected for you here, if you need help in shader coding, go ask our Deepseek / ChatGPT / Gemini friend or someone else...  
   
 ### <cy>Contact / Report Bugs</c>
-- Github issue
-- Discord: [Naxrin#6957](https://discordapp.com/users/414986613962309633) (recommended)  
-- Twitter / X: [@Naxrin19](https://x.com/Naxrin19) (not really check it often)
-- In-Game ID: Naxrin
+- Github: [Post an Issue](https://github.com/Naxrin/Progress-Bar-Color/issues)
+- Discord: [Naxrin#6957](https://discordapp.com/users/414986613962309633)
+- In-Game ID: [Naxrin](user:4759632)

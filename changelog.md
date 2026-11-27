@@ -1,3 +1,7 @@
+# 5.7.3
+- Apple devices support returns
+- Better desc
+
 # 5.7.2
 - Port to Geode 6.0.0-beta.1
 - Fix progress bars rendering translucent (wrong blend function)
